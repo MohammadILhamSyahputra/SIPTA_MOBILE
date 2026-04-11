@@ -1,5 +1,6 @@
 package com.example.sipta
 import android.content.Context
+import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
@@ -96,12 +97,37 @@ class DBOpenHelper (context: Context) :
 
         // Data Awal untuk Demo UTS
         db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('SHOFI DINA ANGGRAINI', 'owner', 'shofidina@gmail.com', '123456')")
-        db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('MOHAMMAD ILHAM SYAHPUTRA', 'admin', 'ilham@gmail.com', '123456')")
         db?.execSQL("INSERT INTO kategori (nama_kategori) VALUES ('Makanan Instan'), ('Makanan Ringan'), ('Kebutuhan Dapur'), ('Peralatan Mandi')")
-        db?.execSQL("INSERT INTO barang (kode_barang, nama, stok, harga_beli, harga_jual, id_kategori, id_sales) VALUES ('BRG001','Indomie',100,2000,3000,1,1)")
-        db?.execSQL("INSERT INTO transaksi (total_harga, total_bayar, kembalian, tanggal) VALUES (6000,10000,4000,'2026-04-11')")
-        db?.execSQL("INSERT INTO detail_transaksi (id_transaksi, id_barang, qty, harga_satuan, subtotal) VALUES (1,1,2,3000,6000)")
-        db?.execSQL("INSERT INTO riwayat_sales (sales_id, status, tanggal_kunjungan) VALUES (1,'sudah datang','2026-04-11')")
+    }
+
+    // --- FUNGSI KHUSUS KELOLA USER ---
+    fun getAllUsers(): ArrayList<User> {
+        val list = ArrayList<User>()
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM users", null)
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(User(
+                    cursor.getInt(cursor.getColumnIndexOrThrow("id")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("name")), // Ini username di model
+                    cursor.getString(cursor.getColumnIndexOrThrow("email")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("userType")) // Ini level di model
+                ))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun deleteUser(id: Int): Int {
+        return writableDatabase.delete("users", "id=?", arrayOf(id.toString()))
+    }
+
+    fun updateUserRole(id: Int, newRole: String): Int {
+        val values = ContentValues()
+        values.put("userType", newRole)
+        return writableDatabase.update("users", values, "id=?", arrayOf(id.toString()))
+
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -116,8 +142,22 @@ class DBOpenHelper (context: Context) :
         onCreate(db)
     }
 
+    fun addUser(name: String, email: String, pass: String, type: String): Long {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("name", name)
+            put("email", email)
+            put("password", pass)
+            put("userType", type)
+            put("created_at", System.currentTimeMillis().toString())
+        }
+        return db.insert("users", null, values)
+    }
+
     companion object {
         const val DB_NAME = "sipta_mobile.db"
         const val DB_VER = 1
     }
 }
+// Model Data User
+data class User(val id: Int, val username: String, val email: String, val level: String)

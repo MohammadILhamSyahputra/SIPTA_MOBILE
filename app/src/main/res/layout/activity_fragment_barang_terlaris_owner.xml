@@ -1,4 +1,5 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F4F7F6">
@@ -15,8 +16,72 @@
             android:layout_height="wrap_content"
             android:text="Laporan Barang Terlaris"
             android:textSize="20sp"
+            android:textColor="#2E7D32"
             android:textStyle="bold"
-            android:layout_marginBottom="12dp"/>
+            android:layout_gravity="center"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hasil Penjualan Berdasarkan Filter Tanggal"
+            android:layout_gravity="center"
+            android:layout_marginBottom="16dp"/>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tanggal Mulai:"/>
+                <EditText android:id="@+id/etTanggalMulai" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="01/04/2026" android:focusable="false"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tanggal Akhir:" android:layout_marginTop="8dp"/>
+                <EditText android:id="@+id/etTanggalAkhir" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="11/04/2026" android:focusable="false"/>
+
+                <Button
+                    android:id="@+id/btnTampilkan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tampilkan"
+                    android:backgroundTint="#2E7D32"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginTop="12dp"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:text="Top 10 Barang Terlaris (Chart)"
+            android:gravity="center"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="16dp"/>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TableLayout
+                android:id="@+id/tableBarang"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:stretchColumns="*">
+                <TableRow android:background="#EEEEEE" android:padding="8dp">
+                    <TextView android:text="Kode Barang" android:textStyle="bold" android:padding="8dp"/>
+                    <TextView android:text="Nama Barang" android:textStyle="bold" android:padding="8dp"/>
+                    <TextView android:text="Harga Beli" android:textStyle="bold" android:padding="8dp"/>
+                    <TextView android:text="QTY Terjual" android:textStyle="bold" android:padding="8dp" android:textColor="#D32F2F"/>
+                </TableRow>
+            </TableLayout>
+        </HorizontalScrollView>
 
     </LinearLayout>
 </ScrollView>

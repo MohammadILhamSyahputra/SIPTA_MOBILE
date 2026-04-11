@@ -21,4 +21,9 @@
         android:icon="@drawable/sales"
         android:title="Riwayat Sales" />
 
+    <item
+        android:id="@+id/itemUser"
+        android:icon="@drawable/user"
+        android:title="Kelola User" />
+
 </menu>

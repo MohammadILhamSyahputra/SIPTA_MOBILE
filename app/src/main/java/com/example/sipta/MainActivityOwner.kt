@@ -27,6 +27,7 @@ class MainActivityOwner : AppCompatActivity(), NavigationBarView.OnItemSelectedL
     private lateinit var fragBarangTerlaris: FragmentBarangTerlarisOwner
     private lateinit var fragPenjualan: FragmentLapPenjualanOwner
     private lateinit var fragRiwayat: FragmentRiwayatSalesOwner
+    private lateinit var fragUser: FragmentKelolaUser
 
     // Data login
     private var loggedInName: String? = null
@@ -37,20 +38,16 @@ class MainActivityOwner : AppCompatActivity(), NavigationBarView.OnItemSelectedL
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // ViewBinding
         binding = ActivityMainOwnerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // Database
         db = DBOpenHelper(this).writableDatabase
 
-        // Inisialisasi Fragment
         fragDashboard = FragmentDashboardOwner()
         fragBarangTerlaris = FragmentBarangTerlarisOwner()
         fragPenjualan = FragmentLapPenjualanOwner()
         fragRiwayat = FragmentRiwayatSalesOwner()
+        fragUser = FragmentKelolaUser()
 
-        // Bottom Navigation
         binding.bottomNavOwner.setOnItemSelectedListener(this)
 
         // Ambil data login
@@ -58,11 +55,10 @@ class MainActivityOwner : AppCompatActivity(), NavigationBarView.OnItemSelectedL
         loggedInEmail = intent.getStringExtra("USER_EMAIL")
         loggedInRole = intent.getStringExtra("USER_ROLE")
 
-        // Hilangkan warna default icon
         val navView: BottomNavigationView = findViewById(R.id.bottomNavOwner)
         navView.itemIconTintList = null
 
-        // Insets (biar aman di semua HP)
+        // Insets
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -95,6 +91,11 @@ class MainActivityOwner : AppCompatActivity(), NavigationBarView.OnItemSelectedL
 
             R.id.itemRiwayat -> {
                 loadFragment(fragRiwayat)
+                return true
+            }
+
+            R.id.itemUser -> {
+                loadFragment(fragUser)
                 return true
             }
         }
