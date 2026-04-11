@@ -10,7 +10,7 @@ class DBOpenHelper (context: Context) :
         val tUsers = "CREATE TABLE users (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "name TEXT NOT NULL, " +
-                "userType TEXT NOT NULL DEFAULT 'admin', " +
+                "userType TEXT NOT NULL DEFAULT 'owner', " +
                 "email TEXT UNIQUE NOT NULL, " +
                 "password TEXT NOT NULL, " +
                 "created_at TEXT, updated_at TEXT)"
@@ -95,8 +95,13 @@ class DBOpenHelper (context: Context) :
         db?.execSQL(tDetailRiwayatSales)
 
         // Data Awal untuk Demo UTS
+        db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('SHOFI DINA ANGGRAINI', 'owner', 'shofidina@gmail.com', '123456')")
         db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('MOHAMMAD ILHAM SYAHPUTRA', 'admin', 'ilham@gmail.com', '123456')")
         db?.execSQL("INSERT INTO kategori (nama_kategori) VALUES ('Makanan Instan'), ('Makanan Ringan'), ('Kebutuhan Dapur'), ('Peralatan Mandi')")
+        db?.execSQL("INSERT INTO barang (kode_barang, nama, stok, harga_beli, harga_jual, id_kategori, id_sales) VALUES ('BRG001','Indomie',100,2000,3000,1,1)")
+        db?.execSQL("INSERT INTO transaksi (total_harga, total_bayar, kembalian, tanggal) VALUES (6000,10000,4000,'2026-04-11')")
+        db?.execSQL("INSERT INTO detail_transaksi (id_transaksi, id_barang, qty, harga_satuan, subtotal) VALUES (1,1,2,3000,6000)")
+        db?.execSQL("INSERT INTO riwayat_sales (sales_id, status, tanggal_kunjungan) VALUES (1,'sudah datang','2026-04-11')")
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {

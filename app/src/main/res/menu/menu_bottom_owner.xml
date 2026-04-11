@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/itemDashboardOwner"
+        android:icon="@drawable/dashboard"
+        android:title="Dashboard" />
+
+    <item
+        android:id="@+id/itemBarangTerlaris"
+        android:icon="@drawable/barang"
+        android:title="Laporan Barang Terlaris" />
+
+    <item
+        android:id="@+id/itemPenjualan"
+        android:icon="@drawable/kategori"
+        android:title="Laporan Penjualan" />
+
+    <item
+        android:id="@+id/itemRiwayat"
+        android:icon="@drawable/sales"
+        android:title="Riwayat Sales" />
+
+</menu>
