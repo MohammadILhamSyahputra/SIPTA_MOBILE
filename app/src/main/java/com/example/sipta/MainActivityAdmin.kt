@@ -23,7 +23,7 @@ class MainActivityAdmin : AppCompatActivity(), NavigationBarView.OnItemSelectedL
     private lateinit var db: SQLiteDatabase
 
     private lateinit var fragDashboard: FragmentDashboardAdmin
-//    private lateinit var fragBarang: BarangFragment
+    private lateinit var fragBarang: FragmentBarang
     private lateinit var fragKategori: FragmentKategori
     private lateinit var fragSales: FragmentSales
 
@@ -44,7 +44,7 @@ class MainActivityAdmin : AppCompatActivity(), NavigationBarView.OnItemSelectedL
 
         // Inisialisasi Semua Fragment
         fragDashboard = FragmentDashboardAdmin()
-//        fragBarang = BarangFragment()
+        fragBarang = FragmentBarang()
         fragKategori = FragmentKategori()
         fragSales = FragmentSales()
 
@@ -75,10 +75,10 @@ class MainActivityAdmin : AppCompatActivity(), NavigationBarView.OnItemSelectedL
                 loadFragment(fragDashboard)
                 return true
             }
-//            R.id.itemBarang -> {
-//                loadFragment(fragBarang)
-//                return true
-//            }
+            R.id.itemBarang -> {
+                loadFragment(fragBarang)
+                return true
+            }
             R.id.itemKategori -> {
                 loadFragment(fragKategori)
                 return true

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <EditText android:id="@+id/etKode" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Kode Barang" />
+        <EditText android:id="@+id/etNama" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Nama Barang" android:layout_marginTop="8dp"/>
+        <EditText android:id="@+id/etStok" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Stok" android:inputType="number" android:layout_marginTop="8dp"/>
+        <EditText android:id="@+id/etHargaBeli" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Harga Beli" android:inputType="number" android:layout_marginTop="8dp"/>
+        <EditText android:id="@+id/etHargaJual" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Harga Jual" android:inputType="number" android:layout_marginTop="8dp"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih Kategori" android:layout_marginTop="12dp" />
+        <Spinner android:id="@+id/spKategori" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih Sales" android:layout_marginTop="12dp" />
+        <Spinner android:id="@+id/spSales" android:layout_width="match_parent" android:layout_height="wrap_content" />
+    </LinearLayout>
+</ScrollView>
