@@ -6,6 +6,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.graphics.Color
+import com.github.mikephil.charting.data.PieData
+import com.github.mikephil.charting.data.PieDataSet
+import com.github.mikephil.charting.data.PieEntry
+import com.github.mikephil.charting.utils.ColorTemplate
 import androidx.fragment.app.Fragment
 import com.example.sipta.databinding.ActivityFragmentDashboardOwnerBinding
 
@@ -32,6 +37,7 @@ class FragmentDashboardOwner : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         updateDashboardStats()
+        tampilkanGrafikStok()
     }
 
     private fun updateDashboardStats() {
@@ -56,6 +62,41 @@ class FragmentDashboardOwner : Fragment() {
         }
         cursor.close()
         return count
+    }
+
+    private fun tampilkanGrafikStok() {
+        val pieChart = binding.pieChart // Sesuaikan dengan ID di XML
+        val listEntri = ArrayList<PieEntry>()
+
+        // 1. Ambil data stok per nama barang dari DB
+        val cursor = db.rawQuery("SELECT nama, stok FROM barang", null)
+        if (cursor.count == 0) {
+            pieChart.setNoDataText("Belum ada data barang untuk ditampilkan")
+            pieChart.invalidate()
+            cursor.close()
+            return
+        }
+        if (cursor.moveToFirst()) {
+            do {
+                val nama = cursor.getString(0)
+                val stok = cursor.getFloat(1)
+                listEntri.add(PieEntry(stok, nama))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+
+        // 2. Atur warna dan tampilan grafik
+        val dataSet = PieDataSet(listEntri, "Distribusi Stok")
+        dataSet.colors = ColorTemplate.MATERIAL_COLORS.toList()
+        dataSet.valueTextColor = Color.BLACK
+        dataSet.valueTextSize = 12f
+
+        val data = PieData(dataSet)
+        pieChart.data = data
+        pieChart.centerText = "Stok Barang"
+        pieChart.description.isEnabled = false
+        pieChart.animateY(1000) // Animasi putar
+        pieChart.invalidate() // Refresh grafik
     }
 
     override fun onDestroyView() {

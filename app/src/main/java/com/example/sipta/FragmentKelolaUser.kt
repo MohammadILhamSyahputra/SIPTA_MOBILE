@@ -150,16 +150,50 @@ class FragmentKelolaUser : Fragment(R.layout.activity_fragment_kelola_user) {
         builder.show()
     }
 
+//    private fun showEditRoleDialog(user: User) {
+//        val roles = arrayOf("owner", "admin", "kasir")
+//        AlertDialog.Builder(requireContext())
+//            .setTitle("Ubah Role ${user.username}")
+//            .setItems(roles) { _, which ->
+//                dbHelper.updateUserRole(user.id, roles[which])
+//                tampilkanDataUser()
+//                Toast.makeText(context, "Role diperbarui!", Toast.LENGTH_SHORT).show()
+//            }
+//            .show()
+//    }
     private fun showEditRoleDialog(user: User) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Ubah Role ${user.username}")
+
+        val rgRole = RadioGroup(requireContext()).apply {
+            orientation = RadioGroup.VERTICAL
+            setPadding(60, 40, 60, 40)
+        }
+
         val roles = arrayOf("owner", "admin", "kasir")
-        AlertDialog.Builder(requireContext())
-            .setTitle("Ubah Role ${user.username}")
-            .setItems(roles) { _, which ->
-                dbHelper.updateUserRole(user.id, roles[which])
-                tampilkanDataUser()
-                Toast.makeText(context, "Role diperbarui!", Toast.LENGTH_SHORT).show()
+        for (roleName in roles) {
+            val rb = RadioButton(requireContext()).apply {
+                text = roleName
+                id = View.generateViewId()
+                // Otomatis pilih radio button sesuai role user saat ini
+                if (user.level.lowercase() == roleName) isChecked = true
             }
-            .show()
+            rgRole.addView(rb)
+        }
+
+        builder.setView(rgRole)
+
+        builder.setPositiveButton("Update") { _, _ ->
+            val selectedId = rgRole.checkedRadioButtonId
+            val radioButton = rgRole.findViewById<RadioButton>(selectedId)
+            val newRole = radioButton.text.toString()
+
+            dbHelper.updateUserRole(user.id, newRole)
+            tampilkanDataUser()
+            Toast.makeText(context, "Role diperbarui!", Toast.LENGTH_SHORT).show()
+        }
+        builder.setNegativeButton("Batal", null)
+        builder.show()
     }
 
     private fun showDeleteDialog(user: User) {

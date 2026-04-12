@@ -8,17 +8,17 @@
 
     <item
         android:id="@+id/itemBarangTerlaris"
-        android:icon="@drawable/barang"
+        android:icon="@drawable/terlaris"
         android:title="Laporan Barang Terlaris" />
 
     <item
         android:id="@+id/itemPenjualan"
-        android:icon="@drawable/kategori"
+        android:icon="@drawable/laporanpenjualan"
         android:title="Laporan Penjualan" />
 
     <item
         android:id="@+id/itemRiwayat"
-        android:icon="@drawable/sales"
+        android:icon="@drawable/riwayatsales"
         android:title="Riwayat Sales" />
 
     <item
