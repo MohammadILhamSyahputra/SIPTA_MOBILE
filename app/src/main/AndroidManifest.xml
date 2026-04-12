@@ -13,10 +13,12 @@
         android:theme="@style/Theme.SIPTA">
         <activity
             android:name=".MainActivityKasir"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan"/>
         <activity
             android:name=".MainActivityOwner"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan"/>
         <activity
             android:name=".MainActivityAdmin"
             android:exported="false"
