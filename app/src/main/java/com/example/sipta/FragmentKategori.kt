@@ -32,11 +32,19 @@ class FragmentKategori : Fragment(), View.OnClickListener {
         binding.btnDelete.setOnClickListener(this)
         binding.lsKategori.setOnItemClickListener { parent, view, position, id ->
             val cursor = parent.adapter.getItem(position) as Cursor
-            selectedId = cursor.getString(cursor.getColumnIndexOrThrow("_id"))
-            binding.edNamaKategori.setText(cursor.getString(cursor.getColumnIndexOrThrow("nama_kategori")))
+            val idBaru = cursor.getString(cursor.getColumnIndexOrThrow("_id"))
+            // Logika: Jika klik item yang sudah terpilih, maka BATALKAN
+            if (selectedId == idBaru) {
+                clearForm()
+                Toast.makeText(thisParent, "Pilihan dibatalkan", Toast.LENGTH_SHORT).show()
+            } else {
+                // Jika klik item berbeda, maka PILIH
+                selectedId = idBaru
+                binding.edNamaKategori.setText(cursor.getString(cursor.getColumnIndexOrThrow("nama_kategori")))
 
-            binding.btnInsert.isEnabled = false
-            binding.btnInsert.alpha = 0.5f
+                binding.btnInsert.isEnabled = false
+                binding.btnInsert.alpha = 0.5f
+            }
         }
 
         return binding.root
@@ -115,20 +123,37 @@ class FragmentKategori : Fragment(), View.OnClickListener {
     private fun insertData() {
         val nama = binding.edNamaKategori.text.toString()
         if (nama.isNotEmpty()) {
-            val cv = ContentValues()
-            cv.put("nama_kategori", nama)
-            db.insert("kategori", null, cv)
-            clearForm()
+            if (isKategoriExists(nama)) {
+                Toast.makeText(thisParent, "Kategori '$nama' sudah ada!", Toast.LENGTH_SHORT).show()
+            } else {
+                val cv = ContentValues()
+                cv.put("nama_kategori", nama)
+                db.insert("kategori", null, cv)
+                Toast.makeText(thisParent, "Kategori berhasil disimpan", Toast.LENGTH_SHORT).show()
+                clearForm()
+            }
+        } else {
+            Toast.makeText(thisParent, "Nama kategori tidak boleh kosong!", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun updateData() {
         val nama = binding.edNamaKategori.text.toString()
         if (selectedId.isNotEmpty() && nama.isNotEmpty()) {
-            val cv = ContentValues()
-            cv.put("nama_kategori", nama)
-            db.update("kategori", cv, "id = ?", arrayOf(selectedId))
-            clearForm()
+            val cursor = db.rawQuery("SELECT * FROM kategori WHERE nama_kategori = ? AND id != ? COLLATE NOCASE",
+                arrayOf(nama, selectedId))
+            val isDuplicate = cursor.count > 0
+            cursor.close()
+
+            if (isDuplicate) {
+                Toast.makeText(thisParent, "Nama kategori '$nama' sudah digunakan!", Toast.LENGTH_SHORT).show()
+            } else {
+                val cv = ContentValues()
+                cv.put("nama_kategori", nama)
+                db.update("kategori", cv, "id = ?", arrayOf(selectedId))
+                Toast.makeText(thisParent, "Data diperbarui", Toast.LENGTH_SHORT).show()
+                clearForm()
+            }
         }
     }
 
@@ -145,6 +170,14 @@ class FragmentKategori : Fragment(), View.OnClickListener {
         binding.btnInsert.isEnabled = true
         binding.btnInsert.alpha = 1.0f
         showDataKategori()
+    }
+
+    private fun isKategoriExists(nama: String): Boolean {
+        // Query untuk mencari nama yang sama (case-insensitive)
+        val cursor = db.rawQuery("SELECT * FROM kategori WHERE nama_kategori = ? COLLATE NOCASE", arrayOf(nama))
+        val exists = cursor.count > 0
+        cursor.close()
+        return exists
     }
 
     override fun onDestroyView() {

@@ -163,6 +163,17 @@ class FragmentBarang : Fragment() {
                 // --- BAGIAN PENTING: Kunci Kode Barang ---
                 etKode.isEnabled = false // User tidak bisa klik atau ketik di sini
                 etKode.alpha = 0.6f      // Opsional: Membuat warnanya agak pudar agar terlihat "terkunci"
+
+                val currentKat = getOneData("kategori", "nama_kategori", cursor.getInt(cursor.getColumnIndexOrThrow("id_kategori")))
+                val currentSal = getOneData("sales", "nama_sales", cursor.getInt(cursor.getColumnIndexOrThrow("id_sales")))
+
+                // 2. Cari posisi teks tersebut di dalam list adapter spinner
+                val posKat = listKategori.indexOf(currentKat)
+                val posSal = listSales.indexOf(currentSal)
+
+                // 3. Set Spinner ke posisi yang ditemukan
+                if (posKat != -1) spKategori.setSelection(posKat)
+                if (posSal != -1) spSales.setSelection(posSal)
             }
             cursor.close()
         } else {
@@ -172,36 +183,66 @@ class FragmentBarang : Fragment() {
             etKode.setText("")
         }
 
-        // 3. Tampilkan AlertDialog
-        AlertDialog.Builder(requireContext())
+        // 3. Buat Dialog (Gunakan .create() agar bisa kontrol tombol secara manual)
+        val mDialog = AlertDialog.Builder(requireContext())
             .setTitle(if (id == null) "Tambah Barang Baru" else "Edit Data Barang")
             .setView(dialogView)
-            .setPositiveButton("Simpan") { _, _ ->
-                // Ambil ID Kategori & Sales dari Spinner
-                val idKat = getIDFromName("kategori", "nama_kategori", spKategori.selectedItem.toString())
-                val idSal = getIDFromName("sales", "nama_sales", spSales.selectedItem.toString())
-
-                val values = ContentValues().apply {
-                    put("kode_barang", etKode.text.toString())
-                    put("nama", etNama.text.toString())
-                    put("stok", etStok.text.toString().toIntOrNull() ?: 0)
-                    put("harga_beli", etHargaBeli.text.toString().toIntOrNull() ?: 0)
-                    put("harga_jual", etHargaJual.text.toString().toIntOrNull() ?: 0)
-                    put("id_kategori", idKat)
-                    put("id_sales", idSal)
-                }
-
-                if (id == null) {
-                    val hasil = db.insert("barang", null, values)
-                    if (hasil != -1L) Toast.makeText(context, "Barang Tersimpan", Toast.LENGTH_SHORT).show()
-                } else {
-                    db.update("barang", values, "id=?", arrayOf(id.toString()))
-                    Toast.makeText(context, "Data Diperbarui", Toast.LENGTH_SHORT).show()
-                }
-                loadDataBarang("") // Refresh List
-            }
+            .setPositiveButton("Simpan", null) // Biarkan null dulu
             .setNegativeButton("Batal", null)
-            .show()
+            .create()
+
+        mDialog.show()
+
+        // 4. Logika Klik Tombol Simpan Manual
+        mDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val kode = etKode.text.toString().trim()
+            val nama = etNama.text.toString().trim()
+
+            // Validasi input kosong
+            if (kode.isEmpty() || nama.isEmpty()) {
+                Toast.makeText(context, "Kode dan Nama wajib diisi!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // VALIDASI DUPLIKAT (Hanya saat tambah barang baru)
+            if (id == null) {
+                if (isDataExist("kode_barang", kode)) {
+                    etKode.error = "Kode sudah terdaftar!"
+                    Toast.makeText(context, "Gagal! Kode Barang '$kode' sudah digunakan", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (isDataExist("nama", nama)) {
+                    etNama.error = "Nama sudah terdaftar!"
+                    Toast.makeText(context, "Gagal! Nama Barang '$nama' sudah ada", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+            }
+
+            // Jika lolos validasi, lakukan proses simpan
+            val idKat = getIDFromName("kategori", "nama_kategori", spKategori.selectedItem.toString())
+            val idSal = getIDFromName("sales", "nama_sales", spSales.selectedItem.toString())
+
+            val values = ContentValues().apply {
+                put("kode_barang", kode)
+                put("nama", nama)
+                put("stok", etStok.text.toString().toIntOrNull() ?: 0)
+                put("harga_beli", etHargaBeli.text.toString().toIntOrNull() ?: 0)
+                put("harga_jual", etHargaJual.text.toString().toIntOrNull() ?: 0)
+                put("id_kategori", idKat)
+                put("id_sales", idSal)
+            }
+
+            if (id == null) {
+                db.insert("barang", null, values)
+                Toast.makeText(context, "Barang berhasil disimpan", Toast.LENGTH_SHORT).show()
+            } else {
+                db.update("barang", values, "id=?", arrayOf(id.toString()))
+                Toast.makeText(context, "Data berhasil diperbarui", Toast.LENGTH_SHORT).show()
+            }
+
+            loadDataBarang("") // Refresh List
+            mDialog.dismiss()  // Tutup dialog hanya jika sukses
+        }
     }
 
     // Fungsi mengambil daftar nama untuk Spinner
@@ -222,5 +263,24 @@ class FragmentBarang : Fragment() {
         if (cursor.moveToFirst()) idTarget = cursor.getInt(0)
         cursor.close()
         return idTarget
+    }
+
+    // Fungsi untuk mengecek keberadaan data di database
+    private fun isDataExist(column: String, value: String): Boolean {
+        val query = "SELECT 1 FROM barang WHERE LOWER($column) = LOWER(?)"
+        val cursor = db.rawQuery(query, arrayOf(value))
+        val exists = cursor.count > 0
+        cursor.close()
+        return exists
+    }
+
+    private fun getOneData(table: String, column: String, id: Int): String {
+        var hasil = ""
+        val cursor = db.rawQuery("SELECT $column FROM $table WHERE id = ?", arrayOf(id.toString()))
+        if (cursor.moveToFirst()) {
+            hasil = cursor.getString(0)
+        }
+        cursor.close()
+        return hasil
     }
 }

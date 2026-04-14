@@ -28,12 +28,21 @@ class FragmentSales : Fragment(), View.OnClickListener {
 
         binding.lsSales.setOnItemClickListener { parent, _, position, _ ->
             val c = parent.adapter.getItem(position) as Cursor
-            selectedId = c.getString(c.getColumnIndexOrThrow("_id"))
-            binding.edNamaSales.setText(c.getString(c.getColumnIndexOrThrow("nama_sales")))
-            binding.edNoTelp.setText(c.getString(c.getColumnIndexOrThrow("no_telp")))
-            binding.edAlamatSales.setText(c.getString(c.getColumnIndexOrThrow("alamat")))
-            binding.btnInsertSales.isEnabled = false // Matikan tombol Insert
-            binding.btnInsertSales.alpha = 0.5f
+            val idBaru = c.getString(c.getColumnIndexOrThrow("_id"))
+            // LOGIKA PEMBATALAN: Jika ID yang diklik sama dengan yang sudah terpilih
+            if (selectedId == idBaru) {
+                refreshData() // Panggil refreshData untuk membersihkan form
+                Toast.makeText(requireContext(), "Pilihan dibatalkan", Toast.LENGTH_SHORT).show()
+            } else {
+                // Jika klik data yang berbeda, maka tampilkan ke EditText
+                selectedId = idBaru
+                binding.edNamaSales.setText(c.getString(c.getColumnIndexOrThrow("nama_sales")))
+                binding.edNoTelp.setText(c.getString(c.getColumnIndexOrThrow("no_telp")))
+                binding.edAlamatSales.setText(c.getString(c.getColumnIndexOrThrow("alamat")))
+
+                binding.btnInsertSales.isEnabled = false // Matikan tombol Insert
+                binding.btnInsertSales.alpha = 0.5f
+            }
         }
 
         return binding.root
@@ -60,17 +69,21 @@ class FragmentSales : Fragment(), View.OnClickListener {
 
         when (v?.id) {
             R.id.btnInsertSales -> {
-                // CEK: Jika selectedId tidak kosong, berarti sedang mode EDIT, jangan izinkan INSERT
+                val nama = binding.edNamaSales.text.toString().trim()
+
                 if (selectedId.isNotEmpty()) {
-                    Toast.makeText(requireContext(), "Gunakan tombol UPDATE untuk mengubah data yang dipilih", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Gunakan tombol UPDATE untuk mengubah data", Toast.LENGTH_SHORT).show()
+                } else if (nama.isEmpty()) {
+                    Toast.makeText(requireContext(), "Nama sales tidak boleh kosong!", Toast.LENGTH_SHORT).show()
+                } else if (isSalesExists(nama)) {
+                    // PERINGATAN JIKA NAMA SAMA
+                    Toast.makeText(requireContext(), "Sales dengan nama '$nama' sudah ada!", Toast.LENGTH_SHORT).show()
                 } else {
-                    // Logika Insert tetap seperti biasa
                     dialog.setTitle("Konfirmasi Simpan")
                         .setMessage("Apakah data sales ini sudah benar?")
-                        .setIcon(android.R.drawable.ic_dialog_info)
                         .setPositiveButton("Ya") { _, _ ->
                             val cv = ContentValues().apply {
-                                put("nama_sales", binding.edNamaSales.text.toString())
+                                put("nama_sales", nama)
                                 put("no_telp", binding.edNoTelp.text.toString())
                                 put("alamat", binding.edAlamatSales.text.toString())
                             }
@@ -83,23 +96,34 @@ class FragmentSales : Fragment(), View.OnClickListener {
             }
 
             R.id.btnUpdateSales -> {
+                val nama = binding.edNamaSales.text.toString().trim()
+
                 if (selectedId.isEmpty()) {
                     Toast.makeText(requireContext(), "Pilih data dari daftar terlebih dahulu!", Toast.LENGTH_SHORT).show()
                 } else {
-                    // Logika Update (Sudah benar)
-                    dialog.setTitle("Konfirmasi Update")
-                        .setMessage("Yakin ingin mengubah data sales ini?")
-                        .setPositiveButton("Ya") { _, _ ->
-                            val cv = ContentValues().apply {
-                                put("nama_sales", binding.edNamaSales.text.toString())
-                                put("no_telp", binding.edNoTelp.text.toString())
-                                put("alamat", binding.edAlamatSales.text.toString())
+                    // Cek apakah nama baru sudah dipakai oleh sales lain (ID berbeda)
+                    val cursor = db.rawQuery("SELECT * FROM sales WHERE nama_sales = ? AND id != ? COLLATE NOCASE",
+                        arrayOf(nama, selectedId))
+                    val isDuplicate = cursor.count > 0
+                    cursor.close()
+
+                    if (isDuplicate) {
+                        Toast.makeText(requireContext(), "Nama sales '$nama' sudah digunakan oleh sales lain!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        dialog.setTitle("Konfirmasi Update")
+                            .setMessage("Yakin ingin mengubah data sales ini?")
+                            .setPositiveButton("Ya") { _, _ ->
+                                val cv = ContentValues().apply {
+                                    put("nama_sales", nama)
+                                    put("no_telp", binding.edNoTelp.text.toString())
+                                    put("alamat", binding.edAlamatSales.text.toString())
+                                }
+                                db.update("sales", cv, "id = ?", arrayOf(selectedId))
+                                refreshData()
                             }
-                            db.update("sales", cv, "id = ?", arrayOf(selectedId))
-                            refreshData()
-                        }
-                        .setNegativeButton("Tidak", null)
-                        .show()
+                            .setNegativeButton("Tidak", null)
+                            .show()
+                    }
                 }
             }
             R.id.btnDeleteSales -> {
@@ -118,8 +142,18 @@ class FragmentSales : Fragment(), View.OnClickListener {
         }
     }
 
+    private fun isSalesExists(nama: String): Boolean {
+        // COLLATE NOCASE agar 'Grosir Mie' dan 'grosir mie' dianggap sama
+        val cursor = db.rawQuery("SELECT * FROM sales WHERE nama_sales = ? COLLATE NOCASE", arrayOf(nama))
+        val exists = cursor.count > 0
+        cursor.close()
+        return exists
+    }
+
     private fun refreshData() {
-        binding.edNamaSales.setText(""); binding.edNoTelp.setText(""); binding.edAlamatSales.setText("")
+        binding.edNamaSales.setText("");
+        binding.edNoTelp.setText("");
+        binding.edAlamatSales.setText("")
         selectedId = ""
         binding.btnInsertSales.isEnabled = true  // Aktifkan kembali
         binding.btnInsertSales.alpha = 1.0f
