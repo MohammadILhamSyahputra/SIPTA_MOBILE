@@ -98,6 +98,7 @@ class DBOpenHelper (context: Context) :
         // Data Awal untuk Demo UTS
         db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('SHOFI DINA ANGGRAINI', 'owner', 'shofidina@gmail.com', '123456')")
         db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('MOHAMMAD ILHAM SYAHPUTRA', 'admin', 'ilham@gmail.com', '12345678')")
+        db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('QADAFI ZAN ZABILL', 'kasir', 'dapy@gmail.com', '12345678')")
         db?.execSQL("INSERT INTO kategori (nama_kategori) VALUES ('Makanan Instan'), ('Makanan Ringan'), ('Kebutuhan Dapur'), ('Peralatan Mandi')")
     }
 
