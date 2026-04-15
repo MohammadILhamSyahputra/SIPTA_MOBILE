@@ -58,11 +58,17 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <TextView
+<!--        <TextView-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="200dp"-->
+<!--            android:text="Top 10 Barang Terlaris (Chart)"-->
+<!--            android:gravity="center"-->
+<!--            android:background="#FFFFFF"-->
+<!--            android:layout_marginBottom="16dp"/>-->
+        <com.github.mikephil.charting.charts.BarChart
+            android:id="@+id/barChart"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:text="Top 10 Barang Terlaris (Chart)"
-            android:gravity="center"
+            android:layout_height="250dp"
             android:background="#FFFFFF"
             android:layout_marginBottom="16dp"/>
 
