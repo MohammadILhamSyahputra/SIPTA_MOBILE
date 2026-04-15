@@ -7,6 +7,9 @@
     <item
         android:id="@+id/POS"
         android:icon="@drawable/kasir"
-        android:title="Barang" />
-
+        android:title="Transaksi" />
+    <item
+        android:id="@+id/itemRiwayat"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:title="Riwayat" />
 </menu>
