@@ -16,7 +16,9 @@
             android:layout_height="wrap_content"
             android:text="Laporan Penjualan"
             android:textSize="20sp"
+            android:textColor="#2E7D32"
             android:textStyle="bold"
+            android:layout_gravity="center"
             android:layout_marginBottom="16dp"/>
 
         <androidx.cardview.widget.CardView
@@ -55,6 +57,13 @@
             android:padding="12dp"
             android:background="#FFFFFF"
             android:textColor="#2E7D32"/>
+
+        <LinearLayout
+            android:id="@+id/layoutHasilPenjualan"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"/>
 
     </LinearLayout>
 </ScrollView>

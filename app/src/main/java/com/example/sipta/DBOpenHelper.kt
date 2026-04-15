@@ -69,7 +69,7 @@ class DBOpenHelper (context: Context) :
         val tRiwayatSales = "CREATE TABLE riwayat_sales (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "sales_id INTEGER NOT NULL, " +
-                "status TEXT CHECK(status IN ('belum datang', 'sudah datang')) NOT NULL DEFAULT 'belum datang', " +
+                "status TEXT CHECK(status IN ('belum datang', 'proses', 'sudah datang')) NOT NULL DEFAULT 'belum datang', " +
                 "tanggal_kunjungan TEXT, " +
                 "created_at TEXT, updated_at TEXT, " +
                 "FOREIGN KEY(sales_id) REFERENCES sales(id))"
@@ -158,7 +158,7 @@ class DBOpenHelper (context: Context) :
 
     companion object {
         const val DB_NAME = "sipta_mobile.db"
-        const val DB_VER = 1
+        const val DB_VER = 2
     }
 }
 // Model Data User

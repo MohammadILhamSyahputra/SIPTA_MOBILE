@@ -68,7 +68,6 @@ class MainActivityOwner : AppCompatActivity(), NavigationBarView.OnItemSelectedL
 
     // Navigasi menu owner
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-
         // Sembunyikan welcome jika ada
         binding.frameOwner.visibility = View.VISIBLE
 
@@ -90,6 +89,8 @@ class MainActivityOwner : AppCompatActivity(), NavigationBarView.OnItemSelectedL
             }
 
             R.id.itemRiwayat -> {
+                binding.layoutWelcome.visibility = View.GONE
+                binding.frameOwner.visibility = View.VISIBLE
                 loadFragment(fragRiwayat)
                 return true
             }
