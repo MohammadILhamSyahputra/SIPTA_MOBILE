@@ -28,11 +28,13 @@ class FragmentBarang : Fragment() {
         val autoAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, namaBarangList)
         binding.acBarang.setAdapter(autoAdapter)
 
+        // 3. Logika saat user memilih salah satu saran
         binding.acBarang.setOnItemClickListener { parent, _, position, _ ->
             val selectedName = parent.getItemAtPosition(position).toString()
             loadDataBarang(selectedName) // Tampilkan hanya barang yang dipilih di ListView
         }
 
+        // 3. Logika saat user MENGETIK (Update list secara real-time)
         binding.acBarang.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -110,13 +112,18 @@ class FragmentBarang : Fragment() {
                         .show()
                 }
 
-
+//                view?.setOnClickListener { showBarangDialog(id) }
+                // 1. Klik Biasa (Opsional: Misal hanya muncul Toast instruksi)
                 view?.setOnClickListener {
                     Toast.makeText(requireContext(), "Tekan lama untuk mengedit data", Toast.LENGTH_SHORT).show()
                 }
 
+                // 2. LOGIKA LONG CLICK (Contextual Action untuk Edit)
                 view?.setOnLongClickListener {
                     showBarangDialog(id) // Panggil dialog edit
+
+                    // Return true agar sistem tahu event Long Click sudah diproses
+                    // dan tidak memicu klik biasa secara bersamaan.
                     true
                 }
             }
@@ -136,13 +143,14 @@ class FragmentBarang : Fragment() {
         val spKategori = dialogView.findViewById<Spinner>(R.id.spKategori)
         val spSales = dialogView.findViewById<Spinner>(R.id.spSales)
 
-        // Isi Spinner Kategori & Sales
+        // 1. Isi Spinner Kategori & Sales
         val listKategori = getListData("kategori", "nama_kategori")
         val listSales = getListData("sales", "nama_sales")
 
         spKategori.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, listKategori)
         spSales.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, listSales)
 
+        // 2. Jika Mode EDIT (id != null), ambil data lama dari DB dan pasang ke Form
         if (id != null) {
             val cursor = db.rawQuery("SELECT * FROM barang WHERE id = ?", arrayOf(id.toString()))
             if (cursor.moveToFirst()) {
@@ -152,15 +160,18 @@ class FragmentBarang : Fragment() {
                 etHargaBeli.setText(cursor.getString(cursor.getColumnIndexOrThrow("harga_beli")))
                 etHargaJual.setText(cursor.getString(cursor.getColumnIndexOrThrow("harga_jual")))
 
+                // --- BAGIAN PENTING: Kunci Kode Barang ---
                 etKode.isEnabled = false // User tidak bisa klik atau ketik di sini
                 etKode.alpha = 0.6f      // Opsional: Membuat warnanya agak pudar agar terlihat "terkunci"
 
                 val currentKat = getOneData("kategori", "nama_kategori", cursor.getInt(cursor.getColumnIndexOrThrow("id_kategori")))
                 val currentSal = getOneData("sales", "nama_sales", cursor.getInt(cursor.getColumnIndexOrThrow("id_sales")))
 
+                // 2. Cari posisi teks tersebut di dalam list adapter spinner
                 val posKat = listKategori.indexOf(currentKat)
                 val posSal = listSales.indexOf(currentSal)
 
+                // 3. Set Spinner ke posisi yang ditemukan
                 if (posKat != -1) spKategori.setSelection(posKat)
                 if (posSal != -1) spSales.setSelection(posSal)
             }
@@ -172,6 +183,7 @@ class FragmentBarang : Fragment() {
             etKode.setText("")
         }
 
+        // 3. Buat Dialog (Gunakan .create() agar bisa kontrol tombol secara manual)
         val mDialog = AlertDialog.Builder(requireContext())
             .setTitle(if (id == null) "Tambah Barang Baru" else "Edit Data Barang")
             .setView(dialogView)
@@ -181,7 +193,7 @@ class FragmentBarang : Fragment() {
 
         mDialog.show()
 
-        // Logika Klik Tombol Simpan Manual
+        // 4. Logika Klik Tombol Simpan Manual
         mDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val kode = etKode.text.toString().trim()
             val nama = etNama.text.toString().trim()

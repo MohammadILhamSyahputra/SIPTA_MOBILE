@@ -131,7 +131,7 @@ class FragmentBarangTerlarisOwner : Fragment() {
 
     private fun tampilkanChart(entries: ArrayList<BarEntry>, labels: ArrayList<String>) {
         val dataSet = BarDataSet(entries, "Total Terjual")
-        dataSet.color = android.graphics.Color.parseColor("#2E7D32") // Warna hijau SIPTA
+        dataSet.color = android.graphics.Color.parseColor("#03A9F4")
         dataSet.valueTextSize = 12f
 
         val barData = BarData(dataSet)

@@ -12,9 +12,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import com.example.sipta.databinding.ActivityMainAdminBinding
-import android.content.Intent // Untuk berpindah Activity
-import android.view.Menu // Untuk mendefinisikan menu
-import androidx.appcompat.app.AlertDialog // Untuk menampilkan popup profil
+import android.content.Intent
+import android.view.Menu
+import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationBarView
 
@@ -39,16 +39,13 @@ class MainActivityAdmin : AppCompatActivity(), NavigationBarView.OnItemSelectedL
         binding = ActivityMainAdminBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Inisialisasi Database SIPTA [cite: 1297]
         db = DBOpenHelper(this).writableDatabase
 
-        // Inisialisasi Semua Fragment
         fragDashboard = FragmentDashboardAdmin()
         fragBarang = FragmentBarang()
         fragKategori = FragmentKategori()
         fragSales = FragmentSales()
 
-        // Set Listener untuk Bottom Navigation [cite: 1289]
         binding.bottomNavigationView.setOnItemSelectedListener(this)
 
         loggedInName = intent.getStringExtra("USER_NAME")
@@ -57,7 +54,6 @@ class MainActivityAdmin : AppCompatActivity(), NavigationBarView.OnItemSelectedL
 
         val navView: BottomNavigationView = findViewById(R.id.bottomNavigationView)
         navView.itemIconTintList = null
-//        setContentView(R.layout.activity_main_admin)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -128,14 +124,14 @@ class MainActivityAdmin : AppCompatActivity(), NavigationBarView.OnItemSelectedL
             .show()
     }
 
-    // Fungsi helper untuk menukar fragment [cite: 1275, 1304, 1305]
+    // Fungsi helper untuk menukar fragment
     private fun loadFragment(fragment: Fragment) {
         val ft: FragmentTransaction = supportFragmentManager.beginTransaction()
         ft.replace(R.id.fragment_container, fragment)
         ft.commit()
     }
 
-    // Memberikan akses database ke Fragment-Fragment [cite: 1298, 1299]
+    // Memberikan akses database ke Fragment-Fragment
     fun getDbObject(): SQLiteDatabase {
         return db
     }
