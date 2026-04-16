@@ -26,7 +26,7 @@ class FragmentDashboardAdmin : Fragment() {
     ): View {
         _binding = ActivityFragmentDashboardAdminBinding.inflate(inflater, container, false)
 
-        // 1. Ambil objek database dari MainActivityAdmin
+        // Ambil objek database dari MainActivityAdmin
         val parentActivity = activity as MainActivityAdmin
         db = parentActivity.getDbObject()
 
@@ -36,7 +36,7 @@ class FragmentDashboardAdmin : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 2. Tampilkan data statistik saat fragment dimuat
+        // Tampilkan data statistik saat fragment dimuat
         updateDashboardStats()
         tampilkanGrafikStok()
     }
@@ -74,7 +74,7 @@ class FragmentDashboardAdmin : Fragment() {
         val pieChart = binding.pieChart // Sesuaikan dengan ID di XML
         val listEntri = ArrayList<PieEntry>()
 
-        // 1. Ambil data stok per nama barang dari DB
+        // Ambil data stok per nama barang dari DB
         val cursor = db.rawQuery("SELECT nama, stok FROM barang", null)
         if (cursor.count == 0) {
             pieChart.setNoDataText("Belum ada data barang untuk ditampilkan")
@@ -91,7 +91,7 @@ class FragmentDashboardAdmin : Fragment() {
         }
         cursor.close()
 
-        // 2. Atur warna dan tampilan grafik
+        // Atur warna dan tampilan grafik
         val dataSet = PieDataSet(listEntri, "Distribusi Stok")
         dataSet.colors = ColorTemplate.MATERIAL_COLORS.toList()
         dataSet.valueTextColor = Color.BLACK

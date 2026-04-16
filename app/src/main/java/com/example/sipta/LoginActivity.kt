@@ -17,15 +17,15 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // 1. Inisialisasi ViewBinding sesuai standar praktik [cite: 1280, 1288]
+        // Inisialisasi ViewBinding sesuai standar praktik [cite: 1280, 1288]
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 2. Inisialisasi Database SQLite [cite: 1297]
+        // Inisialisasi Database SQLite [cite: 1297]
         val dbHelper = DBOpenHelper(this)
         db = dbHelper.readableDatabase
 
-        // 3. Logika Klik Tombol Login [cite: 74, 1365]
+        // Logika Klik Tombol Login [cite: 74, 1365]
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString()
             val password = binding.etPassword.text.toString()
@@ -37,7 +37,7 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        // 4. Navigasi ke Halaman Register [cite: 75, 89]
+        // Navigasi ke Halaman Register [cite: 75, 89]
         binding.tvRegisterLink.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
@@ -63,7 +63,7 @@ class LoginActivity : AppCompatActivity() {
 
             Toast.makeText(this, "Selamat Datang, $name!", Toast.LENGTH_SHORT).show()
 
-            // 5. Pengalihan Halaman Berdasarkan Role [cite: 77, 492, 1049]
+            // Pengalihan Halaman Berdasarkan Role [cite: 77, 492, 1049]
 //            val targetClass = when (role.lowercase()) {
 //                "admin" -> Intent(this, MainActivityAdmin::class.java)
 //                "owner" -> Intent(this, MainActivityOwner::class.java)
@@ -77,7 +77,7 @@ class LoginActivity : AppCompatActivity() {
 
             val intent = Intent(this, targetClass)
 
-            // 3. Masukkan "Barang Bawaan" (data profil) ke dalam kendaraan
+            // Masukkan "Barang Bawaan" (data profil) ke dalam kendaraan
             intent.putExtra("USER_NAME", name)
             intent.putExtra("USER_EMAIL", email)
             intent.putExtra("USER_ROLE", role)

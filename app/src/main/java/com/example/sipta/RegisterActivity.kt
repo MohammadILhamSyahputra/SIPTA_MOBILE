@@ -17,15 +17,15 @@ class RegisterActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // 1. Inisialisasi ViewBinding
+        // Inisialisasi ViewBinding
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 2. Inisialisasi Database
+        // Inisialisasi Database
         val dbHelper = DBOpenHelper(this)
         db = dbHelper.writableDatabase
 
-        // 3. Logika Klik Tombol Daftar
+        // Logika Klik Tombol Daftar
         binding.btnRegisterSubmit.setOnClickListener {
             val nama = binding.etFullName.text.toString()
             val email = binding.etEmailRegister.text.toString()
@@ -42,7 +42,7 @@ class RegisterActivity : AppCompatActivity() {
             }
         }
 
-        // 4. Kembali ke Login
+        // Kembali ke Login
         binding.tvToLogin.setOnClickListener {
             finish() // Menutup halaman register dan kembali ke login
         }

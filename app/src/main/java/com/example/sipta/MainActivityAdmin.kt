@@ -91,13 +91,13 @@ class MainActivityAdmin : AppCompatActivity(), NavigationBarView.OnItemSelectedL
         return false
     }
 
-    // 1. Menampilkan Menu Titik Tiga
+    // Menampilkan Menu Titik Tiga
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.top_menu, menu)
         return true
     }
 
-    // 2. Menangani Klik pada Menu
+    // Menangani Klik pada Menu
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_profile -> {
@@ -114,7 +114,7 @@ class MainActivityAdmin : AppCompatActivity(), NavigationBarView.OnItemSelectedL
         return super.onOptionsItemSelected(item)
     }
 
-    // 3. Fungsi Menampilkan Profile (Hanya Lihat)
+    // Fungsi Menampilkan Profile (Hanya Lihat)
     private fun showProfileDialog() {
         // Gunakan data yang ditangkap dari login, jika null gunakan default
         val name = loggedInName ?: "Tamu"

@@ -68,7 +68,7 @@ class FragmentDashboardOwner : Fragment() {
         val pieChart = binding.pieChart // Sesuaikan dengan ID di XML
         val listEntri = ArrayList<PieEntry>()
 
-        // 1. Ambil data stok per nama barang dari DB
+        // Ambil data stok per nama barang dari DB
         val cursor = db.rawQuery("SELECT nama, stok FROM barang", null)
         if (cursor.count == 0) {
             pieChart.setNoDataText("Belum ada data barang untuk ditampilkan")
@@ -85,7 +85,7 @@ class FragmentDashboardOwner : Fragment() {
         }
         cursor.close()
 
-        // 2. Atur warna dan tampilan grafik
+        // Atur warna dan tampilan grafik
         val dataSet = PieDataSet(listEntri, "Distribusi Stok")
         dataSet.colors = ColorTemplate.MATERIAL_COLORS.toList()
         dataSet.valueTextColor = Color.BLACK

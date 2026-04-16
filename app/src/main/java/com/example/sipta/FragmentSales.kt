@@ -64,7 +64,7 @@ class FragmentSales : Fragment(), View.OnClickListener {
     }
 
     override fun onClick(v: View?) {
-        // 1. Inisialisasi Dialog Builder
+        // Inisialisasi Dialog Builder
         val dialog = AlertDialog.Builder(requireContext())
 
         when (v?.id) {

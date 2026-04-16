@@ -7,7 +7,6 @@ import android.database.sqlite.SQLiteOpenHelper
 class DBOpenHelper (context: Context) :
     SQLiteOpenHelper(context, DB_NAME, null, DB_VER) {
     override fun onCreate(db: SQLiteDatabase?) {
-        // 1. TABEL USERS (Untuk Login & Kelola User)
         val tUsers = "CREATE TABLE users (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "name TEXT NOT NULL, " +
@@ -16,13 +15,11 @@ class DBOpenHelper (context: Context) :
                 "password TEXT NOT NULL, " +
                 "created_at TEXT, updated_at TEXT)"
 
-        // 2. TABEL KATEGORI (Master Data)
         val tKategori = "CREATE TABLE kategori (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "nama_kategori TEXT NOT NULL, " +
                 "created_at TEXT, updated_at TEXT)"
 
-        // 3. TABEL SALES (Master Data)
         val tSales = "CREATE TABLE sales (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "nama_sales TEXT NOT NULL, " +
@@ -30,7 +27,6 @@ class DBOpenHelper (context: Context) :
                 "alamat TEXT NOT NULL, " +
                 "created_at TEXT, updated_at TEXT)"
 
-        // 4. TABEL BARANG (Relasi ke Kategori & Sales)
         val tBarang = "CREATE TABLE barang (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "kode_barang TEXT UNIQUE NOT NULL, " +
@@ -44,7 +40,7 @@ class DBOpenHelper (context: Context) :
                 "FOREIGN KEY(id_kategori) REFERENCES kategori(id), " +
                 "FOREIGN KEY(id_sales) REFERENCES sales(id))"
 
-        // 5. TABEL TRANSAKSI (Header Penjualan)
+
         val tTransaksi = "CREATE TABLE transaksi (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "total_harga INTEGER NOT NULL, " +
@@ -53,7 +49,6 @@ class DBOpenHelper (context: Context) :
                 "tanggal TEXT NOT NULL, " +
                 "created_at TEXT, updated_at TEXT)"
 
-        // 6. TABEL DETAIL TRANSAKSI (Rincian Penjualan)
         val tDetailTransaksi = "CREATE TABLE detail_transaksi (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "id_transaksi INTEGER NOT NULL, " +
@@ -65,7 +60,6 @@ class DBOpenHelper (context: Context) :
                 "FOREIGN KEY(id_transaksi) REFERENCES transaksi(id), " +
                 "FOREIGN KEY(id_barang) REFERENCES barang(id))"
 
-        // 7. TABEL RIWAYAT SALES (Kunjungan Sales)
         val tRiwayatSales = "CREATE TABLE riwayat_sales (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "sales_id INTEGER NOT NULL, " +
@@ -74,7 +68,6 @@ class DBOpenHelper (context: Context) :
                 "created_at TEXT, updated_at TEXT, " +
                 "FOREIGN KEY(sales_id) REFERENCES sales(id))"
 
-        // 8. TABEL DETAIL RIWAYAT SALES (Barang Masuk/Retur saat Kunjungan)
         val tDetailRiwayatSales = "CREATE TABLE detail_riwayat_sales (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "riwayat_sales_id INTEGER NOT NULL, " +
@@ -95,14 +88,13 @@ class DBOpenHelper (context: Context) :
         db?.execSQL(tRiwayatSales)
         db?.execSQL(tDetailRiwayatSales)
 
-        // Data Awal untuk Demo UTS
+        // Data Awal
         db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('SHOFI DINA ANGGRAINI', 'owner', 'shofidina@gmail.com', '123456')")
         db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('MOHAMMAD ILHAM SYAHPUTRA', 'admin', 'ilham@gmail.com', '12345678')")
         db?.execSQL("INSERT INTO users (name, userType, email, password) VALUES ('QADAFI ZAN ZABILL', 'kasir', 'dapy@gmail.com', '12345678')")
         db?.execSQL("INSERT INTO kategori (nama_kategori) VALUES ('Makanan Instan'), ('Makanan Ringan'), ('Kebutuhan Dapur'), ('Peralatan Mandi')")
     }
 
-    // --- FUNGSI KHUSUS KELOLA USER ---
     fun getAllUsers(): ArrayList<User> {
         val list = ArrayList<User>()
         val db = readableDatabase
