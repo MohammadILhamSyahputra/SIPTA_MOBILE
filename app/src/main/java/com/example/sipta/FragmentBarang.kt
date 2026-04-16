@@ -112,18 +112,14 @@ class FragmentBarang : Fragment() {
                         .show()
                 }
 
-//                view?.setOnClickListener { showBarangDialog(id) }
-                // 1. Klik Biasa (Opsional: Misal hanya muncul Toast instruksi)
                 view?.setOnClickListener {
                     Toast.makeText(requireContext(), "Tekan lama untuk mengedit data", Toast.LENGTH_SHORT).show()
                 }
 
                 // 2. LOGIKA LONG CLICK (Contextual Action untuk Edit)
                 view?.setOnLongClickListener {
-                    showBarangDialog(id) // Panggil dialog edit
+                    showBarangDialog(id)
 
-                    // Return true agar sistem tahu event Long Click sudah diproses
-                    // dan tidak memicu klik biasa secara bersamaan.
                     true
                 }
             }
@@ -161,8 +157,8 @@ class FragmentBarang : Fragment() {
                 etHargaJual.setText(cursor.getString(cursor.getColumnIndexOrThrow("harga_jual")))
 
                 // --- BAGIAN PENTING: Kunci Kode Barang ---
-                etKode.isEnabled = false // User tidak bisa klik atau ketik di sini
-                etKode.alpha = 0.6f      // Opsional: Membuat warnanya agak pudar agar terlihat "terkunci"
+                etKode.isEnabled = false
+                etKode.alpha = 0.6f
 
                 val currentKat = getOneData("kategori", "nama_kategori", cursor.getInt(cursor.getColumnIndexOrThrow("id_kategori")))
                 val currentSal = getOneData("sales", "nama_sales", cursor.getInt(cursor.getColumnIndexOrThrow("id_sales")))
@@ -177,7 +173,7 @@ class FragmentBarang : Fragment() {
             }
             cursor.close()
         } else {
-            // Mode TAMBAH: Pastikan Kode Barang aktif kembali
+            // Kode Barang aktif kembali
             etKode.isEnabled = true
             etKode.alpha = 1.0f
             etKode.setText("")
@@ -187,7 +183,7 @@ class FragmentBarang : Fragment() {
         val mDialog = AlertDialog.Builder(requireContext())
             .setTitle(if (id == null) "Tambah Barang Baru" else "Edit Data Barang")
             .setView(dialogView)
-            .setPositiveButton("Simpan", null) // Biarkan null dulu
+            .setPositiveButton("Simpan", null)
             .setNegativeButton("Batal", null)
             .create()
 
@@ -218,7 +214,7 @@ class FragmentBarang : Fragment() {
                 }
             }
 
-            // Jika lolos validasi, lakukan proses simpan
+            // Jika lolos validasi
             val idKat = getIDFromName("kategori", "nama_kategori", spKategori.selectedItem.toString())
             val idSal = getIDFromName("sales", "nama_sales", spSales.selectedItem.toString())
 

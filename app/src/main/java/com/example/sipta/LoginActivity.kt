@@ -21,11 +21,9 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 2. Inisialisasi Database SQLite [cite: 1297]
         val dbHelper = DBOpenHelper(this)
         db = dbHelper.readableDatabase
 
-        // 3. Logika Klik Tombol Login [cite: 74, 1365]
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString()
             val password = binding.etPassword.text.toString()
@@ -37,7 +35,6 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        // 4. Navigasi ke Halaman Register [cite: 75, 89]
         binding.tvRegisterLink.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
@@ -56,14 +53,12 @@ class LoginActivity : AppCompatActivity() {
         )
 
         if (cursor.moveToFirst()) {
-            // Ambil Nama dan Role (userType) dari database [cite: 448, 475, 1405]
             val name = cursor.getString(cursor.getColumnIndexOrThrow("name"))
             val email = cursor.getString(cursor.getColumnIndexOrThrow("email"))
             val role = cursor.getString(cursor.getColumnIndexOrThrow("userType"))
 
             Toast.makeText(this, "Selamat Datang, $name!", Toast.LENGTH_SHORT).show()
 
-            // 5. Pengalihan Halaman Berdasarkan Role [cite: 77, 492, 1049]
 //            val targetClass = when (role.lowercase()) {
 //                "admin" -> Intent(this, MainActivityAdmin::class.java)
 //                "owner" -> Intent(this, MainActivityOwner::class.java)
@@ -83,7 +78,7 @@ class LoginActivity : AppCompatActivity() {
             intent.putExtra("USER_ROLE", role)
 
             startActivity(intent)
-            finish() // Agar user tidak bisa kembali ke halaman login setelah masuk [cite: 923, 926]
+            finish() // Agar user tidak bisa kembali ke halaman login setelah masuk
         } else {
             Toast.makeText(this, "Email atau Password Salah!", Toast.LENGTH_SHORT).show()
         }
