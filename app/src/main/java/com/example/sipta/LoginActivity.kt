@@ -10,26 +10,32 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.widget.Toast
 import com.example.sipta.databinding.ActivityLoginBinding
+import androidx.activity.enableEdgeToEdge
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
+import org.json.JSONObject
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var db: SQLiteDatabase
+
+    // Deklarasi URL Login Server Laragon (Gunakan IP laptop server kalian)
+    private val urlLogin = "http://192.168.0.120/sipta_api/login.php"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // 1. Inisialisasi ViewBinding sesuai standar praktik [cite: 1280, 1288]
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val dbHelper = DBOpenHelper(this)
-        db = dbHelper.readableDatabase
-
         binding.btnLogin.setOnClickListener {
-            val email = binding.etEmail.text.toString()
+            val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString()
 
             if (email.isNotEmpty() && password.isNotEmpty()) {
-                performLogin(email, password)
+                // Panggil fungsi login server
+                performLoginKeServer(email, password)
             } else {
                 Toast.makeText(this, "Email dan Password wajib diisi", Toast.LENGTH_SHORT).show()
             }
@@ -38,52 +44,68 @@ class LoginActivity : AppCompatActivity() {
         binding.tvRegisterLink.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
-//        setContentView(R.layout.activity_login)
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
     }
-    private fun performLogin(email: String, password: String) {
-        // Query untuk mencari user berdasarkan email dan password [cite: 1332, 1421]
-        val cursor: Cursor = db.rawQuery(
-            "SELECT * FROM users WHERE email = ? AND password = ?",
-            arrayOf(email, password)
-        )
 
-        if (cursor.moveToFirst()) {
-            val name = cursor.getString(cursor.getColumnIndexOrThrow("name"))
-            val email = cursor.getString(cursor.getColumnIndexOrThrow("email"))
-            val role = cursor.getString(cursor.getColumnIndexOrThrow("userType"))
+    private fun performLoginKeServer(emailInput: String, passwordInput: String) {
+        val request = object : StringRequest(Request.Method.POST, urlLogin,
+            Response.Listener { response ->
+                try {
+                    val jsonObject = JSONObject(response)
+                    val kode = jsonObject.getString("kode")
 
-            Toast.makeText(this, "Selamat Datang, $name!", Toast.LENGTH_SHORT).show()
+                    if (kode == "000") {
+                        // Ambil data profil yang dikirim balik oleh PHP
+                        val name = jsonObject.getString("nama")
+                        val email = jsonObject.getString("email")
+                        val role = jsonObject.getString("user_type")
 
-//            val targetClass = when (role.lowercase()) {
-//                "admin" -> Intent(this, MainActivityAdmin::class.java)
-//                "owner" -> Intent(this, MainActivityOwner::class.java)
-//                else -> Intent(this, MainActivityKasir::class.java)
-//            }
-            val targetClass = when (role.lowercase()) {
-                "admin" -> MainActivityAdmin::class.java
-                "owner" -> MainActivityOwner::class.java
-                else -> MainActivityKasir::class.java
+                        Toast.makeText(this, "Selamat Datang, $name!", Toast.LENGTH_SHORT).show()
+
+                        // Menentukan Halaman Dashboard berdasarkan role dari database MySQL pusat
+                        val targetClass = when (role.trim().lowercase()) {
+                            "admin" -> MainActivityAdmin::class.java
+                            "owner" -> MainActivityOwner::class.java
+                            "kasir" -> MainActivityKasir::class.java
+                            else -> MainActivityKasir::class.java
+                        }
+
+                        val intent = Intent(this, targetClass)
+
+                        // Masukkan data profil ke dalam Intent sebagai data bawaan hantar halaman
+                        intent.putExtra("USER_NAME", name)
+                        intent.putExtra("USER_EMAIL", email)
+                        intent.putExtra("USER_ROLE", role)
+
+                        startActivity(intent)
+                        finish() // Tutup LoginActivity agar tidak bisa di-back
+                    } else {
+                        Toast.makeText(this, "Email atau Password Salah!", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Parsing Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            },
+            Response.ErrorListener { error ->
+                Toast.makeText(this, "Tidak dapat terhubung ke server: ${error.message}", Toast.LENGTH_LONG).show()
+            }) {
+
+            // Kirim parameter data login ke file PHP
+            override fun getParams(): MutableMap<String, String> {
+                val params = HashMap<String, String>()
+                params["email"] = emailInput
+                params["password"] = passwordInput
+                return params
             }
-
-            val intent = Intent(this, targetClass)
-
-            // 3. Masukkan "Barang Bawaan" (data profil) ke dalam kendaraan
-            intent.putExtra("USER_NAME", name)
-            intent.putExtra("USER_EMAIL", email)
-            intent.putExtra("USER_ROLE", role)
-
-            startActivity(intent)
-            finish() // Agar user tidak bisa kembali ke halaman login setelah masuk
-        } else {
-            Toast.makeText(this, "Email atau Password Salah!", Toast.LENGTH_SHORT).show()
         }
-        cursor.close()
+
+        // Jalankan antrean Volley
+        val queue = Volley.newRequestQueue(this)
+        queue.add(request)
     }
-
-
 }
