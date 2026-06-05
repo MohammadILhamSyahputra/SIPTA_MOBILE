@@ -18,7 +18,6 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-
             <TextView
                 android:id="@+id/txNamaBarang"
                 android:layout_width="wrap_content"
@@ -27,8 +26,6 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="#333" />
-
-
         </RelativeLayout>
 
         <LinearLayout
@@ -37,6 +34,15 @@
             android:layout_marginTop="8dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/imgFotoBarangRow"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_marginRight="8dp"
+                android:scaleType="centerCrop"
+                android:background="#E0E0E0"
+                android:src="@android:drawable/ic_menu_gallery" />
 
             <TextView
                 android:id="@+id/txStokBarang"
@@ -53,7 +59,6 @@
                 android:layout_marginStart="12dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
-
                 <TextView
                     android:id="@+id/txHargaJual"
                     android:layout_width="wrap_content"
@@ -61,7 +66,6 @@
                     android:text="Rp 15.000"
                     android:textColor="#3D5F52"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/txInfoKategoriSales"
                     android:layout_width="wrap_content"
@@ -75,7 +79,6 @@
                 android:layout_height="match_parent"
                 android:gravity="end"
                 android:orientation="vertical">
-
                 <TextView
                     android:id="@+id/txKodeBarang"
                     android:layout_width="wrap_content"
@@ -85,7 +88,6 @@
                     android:textStyle="bold"
                     android:textSize="12sp"
                     android:layout_marginBottom="8dp" />
-
                 <ImageButton
                     android:id="@+id/btnDeleteBarang"
                     android:layout_width="wrap_content"
@@ -96,5 +98,4 @@
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

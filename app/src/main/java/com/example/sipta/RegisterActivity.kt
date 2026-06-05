@@ -88,7 +88,7 @@ class RegisterActivity : AppCompatActivity() {
                 params["nama"] = nama
                 params["email"] = email
                 params["password"] = pass
-                params["user_type"] = "Owner" // Default sesuai arsitektur awal kelompokmu
+                params["user_type"] = "Kasir" // Default sesuai arsitektur awal kelompokmu
                 return params
             }
         }

@@ -10,37 +10,49 @@ import android.view.*
 import android.widget.*
 import androidx.fragment.app.Fragment
 import com.example.sipta.databinding.ActivityFragmentKategoriBinding
+import android.view.*
+import android.widget.*
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
+import org.json.JSONArray
+import org.json.JSONObject
 
 class FragmentKategori : Fragment(), View.OnClickListener {
     private var vb: ActivityFragmentKategoriBinding? = null
     private val binding get() = vb!!
     private lateinit var thisParent: MainActivityAdmin
-    private lateinit var db: SQLiteDatabase
     private lateinit var dialog: AlertDialog.Builder
-    private var selectedId: String = "" // Untuk menyimpan ID yang dipilih di List
+    private var selectedId: String = ""
+
+    // URL Server Laragon (Sesuaikan dengan IP Laptop Server-mu)
+    private val urlKategori = "http://192.168.0.120/sipta_api/crud_kategori.php"
+
+    // Menyimpan list data sementara untuk ListView
+    private var daftarKategori = mutableListOf<HashMap<String, String>>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         thisParent = activity as MainActivityAdmin
         vb = ActivityFragmentKategoriBinding.inflate(inflater, container, false)
-
-        db = thisParent.getDbObject()
         dialog = AlertDialog.Builder(thisParent)
 
-        // Event Klik
+        // Event Klik Button
         binding.btnInsert.setOnClickListener(this)
         binding.btnUpdate.setOnClickListener(this)
         binding.btnDelete.setOnClickListener(this)
+
+        // Event Klik pada Item ListKategori
         binding.lsKategori.setOnItemClickListener { parent, view, position, id ->
-            val cursor = parent.adapter.getItem(position) as Cursor
-            val idBaru = cursor.getString(cursor.getColumnIndexOrThrow("_id"))
-            // Logika: Jika klik item yang sudah terpilih, maka BATALKAN
+            val itemData = daftarKategori[position]
+            val idBaru = itemData["id"].toString()
+
             if (selectedId == idBaru) {
                 clearForm()
                 Toast.makeText(thisParent, "Pilihan dibatalkan", Toast.LENGTH_SHORT).show()
             } else {
-                // Jika klik item berbeda, maka PILIH
                 selectedId = idBaru
-                binding.edNamaKategori.setText(cursor.getString(cursor.getColumnIndexOrThrow("nama_kategori")))
+                binding.edNamaKategori.setText(itemData["nama_kategori"])
 
                 binding.btnInsert.isEnabled = false
                 binding.btnInsert.alpha = 0.5f
@@ -52,31 +64,26 @@ class FragmentKategori : Fragment(), View.OnClickListener {
 
     override fun onStart() {
         super.onStart()
-        showDataKategori()
+        showDataKategori() // Memuat data dari MySQL saat fragment aktif
     }
 
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.btnInsert -> {
-                // Validasi: Jika sedang memilih data (selectedId tidak kosong), larang Insert
                 if (selectedId.isNotEmpty()) {
-                    Toast.makeText(thisParent, "Data sudah terpilih. Gunakan UPDATE untuk mengubah atau klik daftar lain.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(thisParent, "Data sudah terpilih. Gunakan EDIT atau klik daftar lain.", Toast.LENGTH_SHORT).show()
                 } else {
                     showConfirmDialog("INSERT")
                 }
             }
-
             R.id.btnUpdate -> {
-                // Validasi: Harus pilih data dulu sebelum Update
                 if (selectedId.isEmpty()) {
-                    Toast.makeText(thisParent, "Silahkan pilih data kategori dari daftar terlebih dahulu!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(thisParent, "Silahkan pilih data kategori terlebih dahulu!", Toast.LENGTH_SHORT).show()
                 } else {
                     showConfirmDialog("UPDATE")
                 }
             }
-
             R.id.btnDelete -> {
-                // Validasi: Harus pilih data dulu sebelum Delete
                 if (selectedId.isEmpty()) {
                     Toast.makeText(thisParent, "Silahkan pilih data kategori yang ingin dihapus!", Toast.LENGTH_SHORT).show()
                 } else {
@@ -107,60 +114,124 @@ class FragmentKategori : Fragment(), View.OnClickListener {
     }
 
     private fun showDataKategori() {
-        // Query SQLite: id as _id wajib untuk SimpleCursorAdapter
-        val cursor: Cursor = db.query("kategori", arrayOf("id as _id", "nama_kategori"),
-            null, null, null, null, "nama_kategori ASC")
+        val request = object : StringRequest(Request.Method.POST, urlKategori,
+            Response.Listener { response ->
+                try {
+                    daftarKategori.clear()
+                    val jsonArray = JSONArray(response)
 
-        val adapter = SimpleCursorAdapter(
-            thisParent, R.layout.item_data_kategori, cursor,
-            arrayOf("_id", "nama_kategori"),
-            intArrayOf(R.id.txIdKategori, R.id.txNamaKategori),
-            0
-        )
-        binding.lsKategori.adapter = adapter
+                    for (x in 0 until jsonArray.length()) {
+                        val jsonObject = jsonArray.getJSONObject(x)
+                        val hm = HashMap<String, String>()
+                        hm["id"] = jsonObject.getString("id")
+                        hm["nama_kategori"] = jsonObject.getString("nama_kategori")
+                        daftarKategori.add(hm)
+                    }
+
+                    // Setup Adapter ListView sesuai data HashMap Volley
+                    val adapter = SimpleAdapter(
+                        thisParent, daftarKategori, R.layout.item_data_kategori,
+                        arrayOf("id", "nama_kategori"),
+                        intArrayOf(R.id.txIdKategori, R.id.txNamaKategori)
+                    )
+                    binding.lsKategori.adapter = adapter
+                } catch (e: Exception) {
+                    //Toast.makeText(thisParent, "Parsing Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    if (isAdded) {
+                        Toast.makeText(requireContext(), "Parsing Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            Response.ErrorListener { error ->
+                Toast.makeText(thisParent, "Gagal memuat data dari MySQL server", Toast.LENGTH_SHORT).show()
+            }) {
+            override fun getParams(): MutableMap<String, String> {
+                val params = HashMap<String, String>()
+                params["mode"] = "show"
+                return params
+            }
+        }
+        Volley.newRequestQueue(thisParent).add(request)
     }
 
     private fun insertData() {
-        val nama = binding.edNamaKategori.text.toString()
+        val nama = binding.edNamaKategori.text.toString().trim()
         if (nama.isNotEmpty()) {
-            if (isKategoriExists(nama)) {
-                Toast.makeText(thisParent, "Kategori '$nama' sudah ada!", Toast.LENGTH_SHORT).show()
-            } else {
-                val cv = ContentValues()
-                cv.put("nama_kategori", nama)
-                db.insert("kategori", null, cv)
-                Toast.makeText(thisParent, "Kategori berhasil disimpan", Toast.LENGTH_SHORT).show()
-                clearForm()
+            val request = object : StringRequest(Request.Method.POST, urlKategori,
+                Response.Listener { response ->
+                    val jsonObject = JSONObject(response)
+                    val kode = jsonObject.getString("kode")
+                    if (kode == "000") {
+                        Toast.makeText(thisParent, "Kategori berhasil disimpan", Toast.LENGTH_SHORT).show()
+                        clearForm()
+                    } else if (kode == "111") {
+                        Toast.makeText(thisParent, "Kategori '$nama' sudah ada!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(thisParent, "Operasi Gagal!", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                Response.ErrorListener { error -> Toast.makeText(thisParent, "Koneksi Bermasalah", Toast.LENGTH_SHORT).show() }) {
+                override fun getParams(): MutableMap<String, String> {
+                    val params = HashMap<String, String>()
+                    params["mode"] = "insert"
+                    params["nama_kategori"] = nama
+                    return params
+                }
             }
+            Volley.newRequestQueue(thisParent).add(request)
         } else {
             Toast.makeText(thisParent, "Nama kategori tidak boleh kosong!", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun updateData() {
-        val nama = binding.edNamaKategori.text.toString()
+        val nama = binding.edNamaKategori.text.toString().trim()
         if (selectedId.isNotEmpty() && nama.isNotEmpty()) {
-            val cursor = db.rawQuery("SELECT * FROM kategori WHERE nama_kategori = ? AND id != ? COLLATE NOCASE",
-                arrayOf(nama, selectedId))
-            val isDuplicate = cursor.count > 0
-            cursor.close()
-
-            if (isDuplicate) {
-                Toast.makeText(thisParent, "Nama kategori '$nama' sudah digunakan!", Toast.LENGTH_SHORT).show()
-            } else {
-                val cv = ContentValues()
-                cv.put("nama_kategori", nama)
-                db.update("kategori", cv, "id = ?", arrayOf(selectedId))
-                Toast.makeText(thisParent, "Data diperbarui", Toast.LENGTH_SHORT).show()
-                clearForm()
+            val request = object : StringRequest(Request.Method.POST, urlKategori,
+                Response.Listener { response ->
+                    val jsonObject = JSONObject(response)
+                    val kode = jsonObject.getString("kode")
+                    if (kode == "000") {
+                        Toast.makeText(thisParent, "Data diperbarui", Toast.LENGTH_SHORT).show()
+                        clearForm()
+                    } else if (kode == "111") {
+                        Toast.makeText(thisParent, "Nama kategori '$nama' sudah digunakan!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(thisParent, "Gagal memperbarui data", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                Response.ErrorListener { error -> Toast.makeText(thisParent, "Koneksi Bermasalah", Toast.LENGTH_SHORT).show() }) {
+                override fun getParams(): MutableMap<String, String> {
+                    val params = HashMap<String, String>()
+                    params["mode"] = "update"
+                    params["id"] = selectedId
+                    params["nama_kategori"] = nama
+                    return params
+                }
             }
+            Volley.newRequestQueue(thisParent).add(request)
         }
     }
 
     private fun deleteData() {
         if (selectedId.isNotEmpty()) {
-            db.delete("kategori", "id = ?", arrayOf(selectedId))
-            clearForm()
+            val request = object : StringRequest(Request.Method.POST, urlKategori,
+                Response.Listener { response ->
+                    val jsonObject = JSONObject(response)
+                    if (jsonObject.getString("kode") == "000") {
+                        Toast.makeText(thisParent, "Data berhasil dihapus", Toast.LENGTH_SHORT).show()
+                        clearForm()
+                    }
+                },
+                Response.ErrorListener { error -> Toast.makeText(thisParent, "Koneksi Bermasalah", Toast.LENGTH_SHORT).show() }) {
+                override fun getParams(): MutableMap<String, String> {
+                    val params = HashMap<String, String>()
+                    params["mode"] = "delete"
+                    params["id"] = selectedId
+                    return params
+                }
+            }
+            Volley.newRequestQueue(thisParent).add(request)
         }
     }
 
@@ -170,14 +241,6 @@ class FragmentKategori : Fragment(), View.OnClickListener {
         binding.btnInsert.isEnabled = true
         binding.btnInsert.alpha = 1.0f
         showDataKategori()
-    }
-
-    private fun isKategoriExists(nama: String): Boolean {
-        // Query untuk mencari nama yang sama (case-insensitive)
-        val cursor = db.rawQuery("SELECT * FROM kategori WHERE nama_kategori = ? COLLATE NOCASE", arrayOf(nama))
-        val exists = cursor.count > 0
-        cursor.close()
-        return exists
     }
 
     override fun onDestroyView() {
