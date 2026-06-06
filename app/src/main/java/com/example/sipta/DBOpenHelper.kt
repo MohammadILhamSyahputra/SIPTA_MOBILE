@@ -95,13 +95,13 @@ class DBOpenHelper (context: Context) :
         db?.execSQL("INSERT INTO kategori (nama_kategori) VALUES ('Makanan Instan'), ('Makanan Ringan'), ('Kebutuhan Dapur'), ('Peralatan Mandi')")
     }
 
-    fun getAllUsers(): ArrayList<User> {
-        val list = ArrayList<User>()
+    fun getAllUsers(): ArrayList<UserPusat> {
+        val list = ArrayList<UserPusat>()
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM users", null)
         if (cursor.moveToFirst()) {
             do {
-                list.add(User(
+                list.add(UserPusat(
                     cursor.getInt(cursor.getColumnIndexOrThrow("id")),
                     cursor.getString(cursor.getColumnIndexOrThrow("name")), // Ini username di model
                     cursor.getString(cursor.getColumnIndexOrThrow("email")),

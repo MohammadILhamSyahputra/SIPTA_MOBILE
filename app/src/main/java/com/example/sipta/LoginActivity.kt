@@ -16,6 +16,7 @@ import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import org.json.JSONObject
+import android.content.Context
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
@@ -66,6 +67,14 @@ class LoginActivity : AppCompatActivity() {
                         val role = jsonObject.getString("user_type")
 
                         Toast.makeText(this, "Selamat Datang, $name!", Toast.LENGTH_SHORT).show()
+
+                        // =========================================================================
+                        // 🔐 KUNCI PROSES: Simpan data email ke SharedPreferences sebagai Session
+                        // =========================================================================
+                        val sharedPref = getSharedPreferences("SIPTA_SESSION", Context.MODE_PRIVATE)
+                        val editor = sharedPref.edit()
+                        editor.putString("email_login", email) // Menyimpan email akun terlogin secara global
+                        editor.apply()
 
                         // Menentukan Halaman Dashboard berdasarkan role dari database MySQL pusat
                         val targetClass = when (role.trim().lowercase()) {
