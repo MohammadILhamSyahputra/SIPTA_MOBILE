@@ -20,7 +20,7 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRegisterBinding
 
     // Deklarasi URL Root Server Laragon (Ganti dengan IP Laptop kamu via ipconfig)
-    private val urlRegister = "http://192.168.0.120/sipta_api/register.php"
+    private val urlRegister = "http://10.146.68.249/sipta_api/register.php"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

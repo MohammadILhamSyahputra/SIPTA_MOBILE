@@ -13,60 +13,63 @@ import androidx.fragment.app.Fragment
 import com.example.sipta.databinding.ActivityFragmentRiwayatBinding
 import java.text.SimpleDateFormat
 import java.util.*
+import android.widget.*
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
+import org.json.JSONArray
+import org.json.JSONObject
 
 class FragmentRiwayat : Fragment() {
     private var _binding: ActivityFragmentRiwayatBinding? = null
     private val binding get() = _binding!!
-    private lateinit var db: SQLiteDatabase
+
+    // URL Web Service Laragon Riwayat Kasir
+    private val urlRiwayat = "http://10.146.68.249/sipta_api/crud_riwayat_pos.php"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val parentActivity = activity as MainActivityKasir
-        db = parentActivity.getDbObject()
         _binding = ActivityFragmentRiwayatBinding.inflate(inflater, container, false)
-        
+
         loadRiwayatHariIni()
-        
+
         return binding.root
     }
 
     private fun loadRiwayatHariIni() {
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val today = sdf.format(Date())
-        
-        val sql = "SELECT id as _id, total_harga, tanggal FROM transaksi WHERE tanggal LIKE '$today%' ORDER BY id DESC"
-        val cursor = db.rawQuery(sql, null)
-        
-        val adapter = object : CursorAdapter(requireContext(), cursor, 0) {
-            override fun newView(context: Context?, cursor: Cursor?, parent: ViewGroup?): View {
-                return LayoutInflater.from(context).inflate(R.layout.item_riwayat, parent, false)
-            }
+        val listRiwayat = mutableListOf<RiwayatTransaksi>()
 
-            override fun bindView(view: View?, context: Context?, cursor: Cursor?) {
-                val tvKode = view?.findViewById<TextView>(R.id.tvKodeTransaksi)
-                val tvWaktu = view?.findViewById<TextView>(R.id.tvWaktuTransaksi)
-                val tvTotal = view?.findViewById<TextView>(R.id.tvTotalRiwayat)
-                val btnDetail = view?.findViewById<ImageButton>(R.id.btnDetailRiwayat)
+        val request = object : StringRequest(Request.Method.POST, urlRiwayat,
+            Response.Listener { response ->
+                if (!isAdded) return@Listener
+                try {
+                    val jsonArray = JSONArray(response)
+                    for (x in 0 until jsonArray.length()) {
+                        val obj = jsonArray.getJSONObject(x)
+                        listRiwayat.add(RiwayatTransaksi(
+                            obj.getInt("id"),
+                            obj.getInt("total_harga"),
+                            obj.getInt("total_bayar"),
+                            obj.getInt("kembalian"),
+                            obj.getString("tanggal")
+                        ))
+                    }
 
-                val id = cursor?.getInt(cursor.getColumnIndexOrThrow("_id"))
-                val total = cursor?.getInt(cursor.getColumnIndexOrThrow("total_harga"))
-                val tanggalFull = cursor?.getString(cursor.getColumnIndexOrThrow("tanggal"))
-                
-                // Ambil jam saja dari tanggalFull (yyyy-MM-dd HH:mm:ss)
-                val waktu = tanggalFull?.split(" ")?.getOrNull(1) ?: ""
+                    // Pasang Custom Adapter untuk List View
+                    val adapter = RiwayatAdapter(requireContext(), listRiwayat)
+                    binding.lvRiwayat.adapter = adapter
 
-                tvKode?.text = "TRX-${String.format("%03d", id)}"
-                tvWaktu?.text = waktu
-                tvTotal?.text = "Rp $total"
-
-                btnDetail?.setOnClickListener {
-                    showDetailTransaksi(id ?: 0)
-                }
-            }
+                } catch (e: Exception) { e.printStackTrace() }
+            },
+            Response.ErrorListener {
+                if (isAdded) Toast.makeText(requireContext(), "Gagal memuat riwayat", Toast.LENGTH_SHORT).show()
+            }) {
+            override fun getParams(): MutableMap<String, String> = hashMapOf("mode" to "show_today")
         }
-        binding.lvRiwayat.adapter = adapter
+        Volley.newRequestQueue(requireContext()).add(request)
     }
 
-    private fun showDetailTransaksi(idTransaksi: Int) {
+    private fun showDetailTransaksi(trx: RiwayatTransaksi) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.layout_dialog_detail_transaksi, null)
         val tvHeader = dialogView.findViewById<TextView>(R.id.tvDetailHeader)
         val llItems = dialogView.findViewById<LinearLayout>(R.id.llDetailItems)
@@ -74,42 +77,39 @@ class FragmentRiwayat : Fragment() {
         val tvBayar = dialogView.findViewById<TextView>(R.id.tvDetailBayar)
         val tvKembali = dialogView.findViewById<TextView>(R.id.tvDetailKembali)
 
-        // Ambil Data Header Transaksi
-        val cursorH = db.rawQuery("SELECT * FROM transaksi WHERE id = ?", arrayOf(idTransaksi.toString()))
-        if (cursorH.moveToFirst()) {
-            val total = cursorH.getInt(cursorH.getColumnIndexOrThrow("total_harga"))
-            val bayar = cursorH.getInt(cursorH.getColumnIndexOrThrow("total_bayar"))
-            val kembali = cursorH.getInt(cursorH.getColumnIndexOrThrow("kembalian"))
-            val tgl = cursorH.getString(cursorH.getColumnIndexOrThrow("tanggal"))
+        // Set Data Header langsung dari objek transaksi terpilih
+        tvHeader.text = "Transaksi: TRX-${String.format("%03d", trx.id)}\nTanggal: ${trx.tanggal}"
+        tvTotal.text = "Total: Rp ${trx.totalHarga}"
+        tvBayar.text = "Bayar: Rp ${trx.totalBayar}"
+        tvKembali.text = "Kembali: Rp ${trx.kembalian}"
 
-            tvHeader.text = "Transaksi: TRX-${String.format("%03d", idTransaksi)}\nTanggal: $tgl"
-            tvTotal.text = "Total: Rp $total"
-            tvBayar.text = "Bayar: Rp $bayar"
-            tvKembali.text = "Kembali: Rp $kembali"
-        }
-        cursorH.close()
+        // Tarik detail list barang pembelian dari server MySQL
+        val reqDetail = object : StringRequest(Request.Method.POST, urlRiwayat,
+            Response.Listener { response ->
+                if (!isAdded) return@Listener
+                try {
+                    val jsonArray = JSONArray(response)
+                    for (x in 0 until jsonArray.length()) {
+                        val obj = jsonArray.getJSONObject(x)
+                        val nama = obj.getString("nama")
+                        val qty = obj.getInt("qty")
+                        val subtotal = obj.getInt("subtotal")
 
-        // Ambil Data Detail Barang
-        val sqlD = """
-            SELECT d.qty, d.harga_satuan, d.subtotal, b.nama 
-            FROM detail_transaksi d 
-            JOIN barang b ON d.id_barang = b.id 
-            WHERE d.id_transaksi = ?
-        """.trimIndent()
-        val cursorD = db.rawQuery(sqlD, arrayOf(idTransaksi.toString()))
-        if (cursorD.moveToFirst()) {
-            do {
-                val nama = cursorD.getString(cursorD.getColumnIndexOrThrow("nama"))
-                val qty = cursorD.getInt(cursorD.getColumnIndexOrThrow("qty"))
-                val sub = cursorD.getInt(cursorD.getColumnIndexOrThrow("subtotal"))
-                
-                val tvItem = TextView(requireContext())
-                tvItem.text = "$nama ($qty x) = Rp $sub"
-                tvItem.setPadding(0, 4, 0, 4)
-                llItems.addView(tvItem)
-            } while (cursorD.moveToNext())
+                        val tvItem = TextView(requireContext()).apply {
+                            text = "$nama ($qty x) = Rp $subtotal"
+                            setPadding(0, 6, 0, 6)
+                            textSize = 14f
+                        }
+                        llItems.addView(tvItem)
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
+            }, Response.ErrorListener {}) {
+            override fun getParams(): MutableMap<String, String> = hashMapOf(
+                "mode" to "show_detail",
+                "transaksi_id" to trx.id.toString()
+            )
         }
-        cursorD.close()
+        Volley.newRequestQueue(requireContext()).add(reqDetail)
 
         AlertDialog.Builder(requireContext())
             .setTitle("Detail Transaksi")
@@ -121,5 +121,34 @@ class FragmentRiwayat : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    // --- CUSTOM ADAPTER UNTUK RENDER ITEM LIST RIWAYAT ---
+    inner class RiwayatAdapter(context: Context, val items: List<RiwayatTransaksi>) : ArrayAdapter<RiwayatTransaksi>(context, 0, items) {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            var itemView = convertView
+            if (itemView == null) {
+                itemView = LayoutInflater.from(context).inflate(R.layout.item_riwayat, parent, false)
+            }
+            val data = items[position]
+
+            val tvKode = itemView!!.findViewById<TextView>(R.id.tvKodeTransaksi)
+            val tvWaktu = itemView.findViewById<TextView>(R.id.tvWaktuTransaksi)
+            val tvTotal = itemView.findViewById<TextView>(R.id.tvTotalRiwayat)
+            val btnDetail = itemView.findViewById<ImageButton>(R.id.btnDetailRiwayat)
+
+            // Memotong jam saja dari datetime string (yyyy-MM-dd HH:mm:ss)
+            val waktuOnly = data.tanggal.split(" ").getOrNull(1) ?: ""
+
+            tvKode.text = "TRX-${String.format("%03d", data.id)}"
+            tvWaktu.text = waktuOnly
+            tvTotal.text = "Rp ${data.totalHarga}"
+
+            btnDetail.setOnClickListener {
+                showDetailTransaksi(data)
+            }
+
+            return itemView
+        }
     }
 }

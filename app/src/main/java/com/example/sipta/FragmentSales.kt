@@ -24,7 +24,7 @@ class FragmentSales : Fragment(), View.OnClickListener {
     private var selectedId: String = ""
 
     // URL Menembak Server Laragon (Sesuaikan dengan IP Laptop Server-mu)
-    private val urlSales = "http://192.168.0.120/sipta_api/crud_sales.php"
+    private val urlSales = "http://10.146.68.249/sipta_api/crud_sales.php"
 
     // Menyimpan list data sementara dari MySQL server
     private var daftarSales = mutableListOf<HashMap<String, String>>()

@@ -15,25 +15,32 @@ import androidx.fragment.app.Fragment
 import com.example.sipta.databinding.ActivityFragmentPosBinding
 import java.text.SimpleDateFormat
 import java.util.*
+import android.widget.*
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
+import org.json.JSONArray
+import org.json.JSONObject
 
 class FragmentPOS : Fragment() {
     private var _binding: ActivityFragmentPosBinding? = null
     private val binding get() = _binding!!
-    private lateinit var db: SQLiteDatabase
-    
+
     private val keranjangList = mutableListOf<CartItem>()
     private lateinit var adapterKeranjang: KeranjangAdapter
 
+    // URL Web Service Laragon POS Transaksi
+    private val urlPos = "http://10.146.68.249/sipta_api/crud_transaksi_pos.php"
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val parentActivity = activity as MainActivityKasir
-        db = parentActivity.getDbObject()
         _binding = ActivityFragmentPosBinding.inflate(inflater, container, false)
-        
+
         setupCartList()
-        
+
         binding.btnTambahBaris.setOnClickListener { showTambahBarangDialog() }
         binding.btnCheckout.setOnClickListener { showCheckoutDialog() }
-        
+
         return binding.root
     }
 
@@ -44,43 +51,53 @@ class FragmentPOS : Fragment() {
 
     private fun showTambahBarangDialog() {
         val listBarang = mutableListOf<BarangSimple>()
-        val cursor = db.rawQuery("SELECT id, kode_barang, nama, stok, harga_jual FROM barang", null)
-        if (cursor.moveToFirst()) {
-            do {
-                listBarang.add(BarangSimple(
-                    cursor.getInt(0),
-                    cursor.getString(1),
-                    cursor.getString(2),
-                    cursor.getInt(3),
-                    cursor.getInt(4)
-                ))
-            } while (cursor.moveToNext())
+
+        // Ambil data barang dinamis langsung dari server MySQL pusat
+        val request = object : StringRequest(Request.Method.POST, urlPos,
+            Response.Listener { response ->
+                if (!isAdded) return@Listener
+                try {
+                    val jsonArray = JSONArray(response)
+                    for (x in 0 until jsonArray.length()) {
+                        val obj = jsonArray.getJSONObject(x)
+                        listBarang.add(BarangSimple(
+                            obj.getInt("id"),
+                            obj.getString("kode_barang"),
+                            obj.getString("nama"),
+                            obj.getInt("stok"),
+                            obj.getInt("harga_jual")
+                        ))
+                    }
+
+                    // Tampilkan Dialog AutoComplete setelah data berhasil ditarik dari server
+                    val autoView = AutoCompleteTextView(requireContext())
+                    autoView.setPadding(40, 40, 40, 40)
+                    autoView.hint = "Ketik Nama atau Kode Barang"
+                    val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, listBarang.map { "${it.kode_barang} - ${it.nama}" })
+                    autoView.setAdapter(adapter)
+
+                    val dialog = AlertDialog.Builder(requireContext())
+                        .setTitle("Tambah Barang ke Keranjang")
+                        .setView(autoView)
+                        .create()
+
+                    autoView.setOnItemClickListener { _, _, position, _ ->
+                        val selectedText = autoView.adapter.getItem(position).toString()
+                        val kode = selectedText.split(" - ")[0]
+                        val barang = listBarang.find { it.kode_barang == kode }
+
+                        barang?.let { tambahAtauUpdateKeranjang(it) }
+                        dialog.dismiss()
+                    }
+                    dialog.show()
+
+                } catch (e: Exception) { e.printStackTrace() }
+            }, Response.ErrorListener {
+                if (isAdded) Toast.makeText(requireContext(), "Gagal koneksi server barang", Toast.LENGTH_SHORT).show()
+            }) {
+            override fun getParams(): MutableMap<String, String> = hashMapOf("mode" to "get_barang")
         }
-        cursor.close()
-
-        val autoView = AutoCompleteTextView(requireContext())
-        autoView.setPadding(40, 40, 40, 40)
-        autoView.hint = "Ketik Nama atau Kode Barang"
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, listBarang.map { "${it.kode_barang} - ${it.nama}" })
-        autoView.setAdapter(adapter)
-
-        val dialog = AlertDialog.Builder(requireContext())
-            .setTitle("Tambah Barang ke Keranjang")
-            .setView(autoView)
-            .create()
-
-        autoView.setOnItemClickListener { _, _, position, _ ->
-            val selectedText = autoView.adapter.getItem(position).toString()
-            val kode = selectedText.split(" - ")[0]
-            val barang = listBarang.find { it.kode_barang == kode }
-            
-            barang?.let {
-                tambahAtauUpdateKeranjang(it)
-            }
-            dialog.dismiss()
-        }
-
-        dialog.show()
+        Volley.newRequestQueue(requireContext()).add(request)
     }
 
     private fun tambahAtauUpdateKeranjang(barang: BarangSimple) {
@@ -99,7 +116,7 @@ class FragmentPOS : Fragment() {
                 Toast.makeText(requireContext(), "Stok Kosong!", Toast.LENGTH_SHORT).show()
             }
         }
-        
+
         updateTotal()
         adapterKeranjang.notifyDataSetChanged()
     }
@@ -119,73 +136,72 @@ class FragmentPOS : Fragment() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.layout_dialog_checkout, null)
         val tvTotal = dialogView.findViewById<TextView>(R.id.tvTotalCheckout)
         val etBayar = dialogView.findViewById<EditText>(R.id.etBayar)
-        
+
         tvTotal.text = "Total: Rp $total"
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Pembayaran")
+            .setTitle("Pembayaran Tunai")
             .setView(dialogView)
             .setPositiveButton("Proses") { _, _ ->
                 val bayarStr = etBayar.text.toString()
                 if (bayarStr.isEmpty()) return@setPositiveButton
-                
+
                 val bayar = bayarStr.toInt()
                 if (bayar < total) {
                     Toast.makeText(requireContext(), "Uang tidak cukup!", Toast.LENGTH_SHORT).show()
                 } else {
-                    prosesTransaksi(total, bayar)
+                    prosesTransaksiKeServer(total, bayar)
                 }
             }
             .setNegativeButton("Batal", null)
             .show()
     }
 
-    private fun prosesTransaksi(total: Int, bayar: Int) {
+    private fun prosesTransaksiKeServer(total: Int, bayar: Int) {
         val kembalian = bayar - total
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        val tanggal = sdf.format(Date())
 
-        db.beginTransaction()
-        try {
-            val vTransaksi = ContentValues().apply {
-                put("total_harga", total)
-                put("total_bayar", bayar)
-                put("kembalian", kembalian)
-                put("tanggal", tanggal)
-                put("created_at", tanggal)
-            }
-            val idTransaksi = db.insert("transaksi", null, vTransaksi)
-
-            for (item in keranjangList) {
-                val vDetail = ContentValues().apply {
-                    put("id_transaksi", idTransaksi)
-                    put("id_barang", item.idBarang)
-                    put("qty", item.qty)
-                    put("harga_satuan", item.harga)
-                    put("subtotal", item.subtotal)
-                    put("created_at", tanggal)
-                }
-                db.insert("detail_transaksi", null, vDetail)
-
-                db.execSQL("UPDATE barang SET stok = stok - ${item.qty} WHERE id = ${item.idBarang}")
-            }
-            db.setTransactionSuccessful()
-            
-            AlertDialog.Builder(requireContext())
-                .setTitle("Transaksi Berhasil")
-                .setMessage("Kembalian: Rp $kembalian")
-                .setPositiveButton("OK") { _, _ ->
-                    keranjangList.clear()
-                    adapterKeranjang.notifyDataSetChanged()
-                    updateTotal()
-                }
-                .show()
-
-        } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Gagal: ${e.message}", Toast.LENGTH_SHORT).show()
-        } finally {
-            db.endTransaction()
+        // Konversi list belanja menjadi format Array JSON String agar ramah dibaca PHP
+        val jsonArrayItems = JSONArray()
+        for (item in keranjangList) {
+            val itemObj = JSONObject()
+            itemObj.put("barang_id", item.idBarang) // Menyesuaikan kolom barang_id database pusat
+            itemObj.put("qty", item.qty)
+            itemObj.put("harga_satuan", item.harga)
+            itemObj.put("subtotal", item.subtotal)
+            jsonArrayItems.put(itemObj)
         }
+
+        val requestCheckout = object : StringRequest(Request.Method.POST, urlPos,
+            Response.Listener { response ->
+                if (!isAdded) return@Listener
+                try {
+                    val jsonRes = JSONObject(response)
+                    if (jsonRes.getString("kode") == "000") {
+                        AlertDialog.Builder(requireContext())
+                            .setTitle("Transaksi Berhasil")
+                            .setMessage("Kembalian: Rp $kembalian")
+                            .setPositiveButton("OK") { _, _ ->
+                                keranjangList.clear()
+                                adapterKeranjang.notifyDataSetChanged()
+                                updateTotal()
+                            }
+                            .show()
+                    } else {
+                        Toast.makeText(requireContext(), "Gagal: ${jsonRes.getString("pesan")}", Toast.LENGTH_LONG).show()
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
+            }, Response.ErrorListener {
+                if (isAdded) Toast.makeText(requireContext(), "Koneksi ke server terputus", Toast.LENGTH_SHORT).show()
+            }) {
+            override fun getParams(): MutableMap<String, String> = hashMapOf(
+                "mode" to "proses_checkout",
+                "total_harga" to total.toString(),
+                "total_bayar" to bayar.toString(),
+                "kembalian" to kembalian.toString(),
+                "items_json" to jsonArrayItems.toString()
+            )
+        }
+        Volley.newRequestQueue(requireContext()).add(requestCheckout)
     }
 
     override fun onDestroyView() {
@@ -203,7 +219,7 @@ class FragmentPOS : Fragment() {
                 itemView = LayoutInflater.from(context).inflate(R.layout.item_keranjang, parent, false)
             }
             val item = items[position]
-            
+
             val tvKode = itemView!!.findViewById<TextView>(R.id.tvKodeItem)
             val tvNama = itemView.findViewById<TextView>(R.id.tvNamaItem)
             val etQty = itemView.findViewById<EditText>(R.id.etQtyItem)
@@ -213,12 +229,10 @@ class FragmentPOS : Fragment() {
             tvKode.text = item.kode
             tvNama.text = item.nama
             tvSubtotal.text = "Rp ${item.subtotal}"
-            
-            // Remove previous watcher to avoid infinite loop / wrong updates
+
             etQty.tag?.let { (it as TextWatcher).let { etQty.removeTextChangedListener(it) } }
-            
             etQty.setText(item.qty.toString())
-            
+
             val watcher = object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}

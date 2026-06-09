@@ -22,7 +22,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
 
     // Deklarasi URL Login Server Laragon (Gunakan IP laptop server kalian)
-    private val urlLogin = "http://192.168.0.120/sipta_api/login.php"
+    private val urlLogin = "http://10.146.68.249/sipta_api/login.php"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

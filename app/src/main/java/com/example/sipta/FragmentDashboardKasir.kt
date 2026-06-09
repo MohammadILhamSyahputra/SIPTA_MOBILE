@@ -25,7 +25,7 @@ class FragmentDashboardKasir : Fragment() {
     private val binding get() = _binding!!
 
     // Menggunakan 1 file PHP API yang sama untuk semua hak akses (Admin, Owner, Kasir)
-    private val urlDashboard = "http://192.168.0.120/sipta_api/dashboard_admin.php"
+    private val urlDashboard = "http://10.146.68.249/sipta_api/dashboard_admin.php"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
