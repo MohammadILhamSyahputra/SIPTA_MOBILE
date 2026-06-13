@@ -1,32 +1,37 @@
 package com.example.sipta
 
 import android.app.DatePickerDialog
-import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.sipta.databinding.ActivityFragmentLapPenjualanOwnerBinding
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.Calendar
+import java.util.HashMap
 
 class FragmentLapPenjualanOwner : Fragment() {
 
     private var _binding: ActivityFragmentLapPenjualanOwnerBinding? = null
     private val binding get() = _binding!!
-    private lateinit var db: SQLiteDatabase
+
+    // Tambah URL IP Server Manual (Menembak ke file laporan_penjualan.php)
+    private val urlLaporan = "http://192.168.1.127/sipta_api/laporan_penjualan.php"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = ActivityFragmentLapPenjualanOwnerBinding.inflate(inflater, container, false)
-
-        val parentActivity = requireActivity() as MainActivityOwner
-        db = parentActivity.getDbObject()
-
         return binding.root
     }
 
@@ -52,41 +57,59 @@ class FragmentLapPenjualanOwner : Fragment() {
     }
 
     private fun loadData(tglMulai: String, tglAkhir: String) {
-        val cursor = db.rawQuery("""
-            SELECT barang.nama, detail_transaksi.qty, detail_transaksi.harga_satuan, transaksi.tanggal, barang.harga_beli
-            FROM detail_transaksi
-            JOIN barang ON detail_transaksi.id_barang = barang.id
-            JOIN transaksi ON detail_transaksi.id_transaksi = transaksi.id
-            WHERE date(transaksi.tanggal) BETWEEN date(?) AND date(?)
-        """.trimIndent(), arrayOf(tglMulai, tglAkhir))
-
-        var totalPenjualan = 0
-        var totalModal = 0
         binding.layoutHasilPenjualan.removeAllViews()
 
-        while (cursor.moveToNext()) {
-            val nama = cursor.getString(0)
-            val qty = cursor.getInt(1)
-            val harga = cursor.getInt(2)
-            val tanggal = cursor.getString(3)
-            val hargaBeli = cursor.getInt(4)
+        // Ganti SQLite rawQuery dengan StringRequest Volley secara manual
+        val request = object : StringRequest(Request.Method.POST, urlLaporan,
+            Response.Listener { response ->
+                if (isAdded && activity != null) {
+                    try {
+                        val jsonArray = JSONArray(response)
+                        var totalPenjualan = 0
+                        var totalModal = 0
 
-            val subtotal = qty * harga
-            totalPenjualan += subtotal
+                        for (x in 0 until jsonArray.length()) {
+                            val jsonObject = jsonArray.getJSONObject(x)
+                            val nama = jsonObject.getString("nama")
+                            val qty = jsonObject.getInt("qty")
+                            val harga = jsonObject.getInt("harga_satuan")
+                            val tanggal = jsonObject.getString("tanggal")
+                            val hargaBeli = jsonObject.getInt("harga_beli")
 
-            val modal = qty * hargaBeli
-            totalModal += modal
+                            val subtotal = qty * harga
+                            totalPenjualan += subtotal
 
-            val itemView = createItemView(nama, qty, harga, subtotal, tanggal)
-            binding.layoutHasilPenjualan.addView(itemView)
+                            val modal = qty * hargaBeli
+                            totalModal += modal
+
+                            val itemView = createItemView(nama, qty, harga, subtotal, tanggal)
+                            binding.layoutHasilPenjualan.addView(itemView)
+                        }
+
+                        val keuntungan = totalPenjualan - totalModal
+                        val margin = if (totalPenjualan > 0) (keuntungan * 100 / totalPenjualan) else 0
+                        binding.tvTotalPenjualan.text =
+                            "Total Penjualan: Rp $totalPenjualan\n" + "Keuntungan: Rp $keuntungan\n" + "Margin: $margin%"
+
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            },
+            Response.ErrorListener {
+                if (isAdded) Toast.makeText(requireContext(), "Gagal memuat data dari MySQL", Toast.LENGTH_SHORT).show()
+            }) {
+
+            // Tambah blok getParams di bagian bawah StringRequest
+            override fun getParams(): MutableMap<String, String> {
+                val params = HashMap<String, String>()
+                params["mode"] = "show_lap_penjualan"
+                params["tgl_mulai"] = tglMulai
+                params["tgl_akhir"] = tglAkhir
+                return params
+            }
         }
-
-        val keuntungan = totalPenjualan - totalModal
-        val margin = if (totalPenjualan > 0) (keuntungan * 100 / totalPenjualan) else 0
-        binding.tvTotalPenjualan.text =
-            "Total Penjualan: Rp $totalPenjualan\n" + "Keuntungan: Rp $keuntungan\n" + "Margin: $margin%"
-
-        cursor.close()
+        Volley.newRequestQueue(requireContext()).add(request)
     }
 
     private fun createItemView(nama: String, qty: Int, harga: Int, subtotal: Int, tanggal: String): View {

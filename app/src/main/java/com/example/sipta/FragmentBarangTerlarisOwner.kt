@@ -1,6 +1,5 @@
 package com.example.sipta
 
-import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -12,23 +11,30 @@ import android.app.DatePickerDialog
 import android.widget.TableRow
 import android.widget.Toast
 import java.util.*
- import com.github.mikephil.charting.data.BarData
- import com.github.mikephil.charting.data.BarDataSet
- import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.HashMap
 
 class FragmentBarangTerlarisOwner : Fragment() {
 
     private var _binding: ActivityFragmentBarangTerlarisOwnerBinding? = null
     private val binding get() = _binding!!
-    private lateinit var db: SQLiteDatabase
+
+    // Tambah URL IP Server Manual (Menembak ke file laporan_barang_terlaris.php)
+    private val urlLaporan = "http://192.168.1.127/sipta_api/laporan_barang_terlaris.php"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = ActivityFragmentBarangTerlarisOwnerBinding.inflate(inflater, container, false)
-        val parentActivity = requireActivity() as MainActivityOwner
-        db = parentActivity.getDbObject()
         return binding.root
     }
 
@@ -39,7 +45,6 @@ class FragmentBarangTerlarisOwner : Fragment() {
         binding.etTanggalAkhir.setOnClickListener { showDatePicker(binding.etTanggalAkhir) }
 
         binding.btnTampilkan.setOnClickListener {
-            // AMBIL DARI TAG (format yyyy-MM-dd), BUKAN DARI TEXT (dd/MM/yyyy)
             val tglMulai = binding.etTanggalMulai.tag?.toString() ?: ""
             val tglAkhir = binding.etTanggalAkhir.tag?.toString() ?: ""
 
@@ -55,78 +60,83 @@ class FragmentBarangTerlarisOwner : Fragment() {
         val c = Calendar.getInstance()
         DatePickerDialog(requireContext(), { _, year, month, day ->
             val bulan = month + 1
-            // displayDate untuk dilihat user (16/04/2026)
             val displayDate = String.format("%02d/%02d/%04d", day, bulan, year)
-            // dbDate untuk dikirim ke SQL (2026-04-16)
             val dbDate = String.format("%04d-%02d-%02d", year, bulan, day)
 
             editText.setText(displayDate)
-            editText.tag = dbDate // SIMPAN FORMAT DB DI SINI
+            editText.tag = dbDate
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
     }
 
     private fun loadDataFiltered(tglMulai: String, tglAkhir: String) {
-        // 1. Hapus data lama di tabel (kecuali header)
         val count = binding.tableBarang.childCount
         if (count > 1) {
             binding.tableBarang.removeViews(1, count - 1)
         }
 
-        // 2. Query SQL: Pastikan mengambil semua kolom yang dibutuhkan untuk tabel & chart
-        val sql = """
-        SELECT b.kode_barang, b.nama, b.harga_beli, SUM(dt.qty) AS total_qty
-        FROM detail_transaksi dt
-        JOIN transaksi t ON dt.id_transaksi = t.id
-        JOIN barang b ON dt.id_barang = b.id
-        WHERE date(t.tanggal) BETWEEN date(?) AND date(?)
-        GROUP BY b.id
-        ORDER BY total_qty DESC
-        LIMIT 10
-    """.trimIndent()
+        // Ganti SQLite rawQuery dengan StringRequest Volley secara manual
+        val request = object : StringRequest(Request.Method.POST, urlLaporan,
+            Response.Listener { response ->
+                if (isAdded && activity != null) {
+                    try {
+                        val jsonArray = JSONArray(response)
+                        val entries = ArrayList<BarEntry>()
+                        val labels = ArrayList<String>()
+                        var indexChart = 0f
 
-        val cursor = db.rawQuery(sql, arrayOf(tglMulai, tglAkhir))
+                        for (x in 0 until jsonArray.length()) {
+                            val jsonObject = jsonArray.getJSONObject(x)
+                            val kode = jsonObject.getString("kode_barang")
+                            val nama = jsonObject.getString("nama")
+                            val hargaBeli = jsonObject.getInt("harga_beli")
+                            val qty = jsonObject.getInt("total_qty")
 
-        // List untuk menyimpan data grafik
-        val entries = ArrayList<BarEntry>()
-        val labels = ArrayList<String>()
-        var indexChart = 0f
+                            // --- BAGIAN TABEL ---
+                            val row = TableRow(requireContext())
+                            row.setPadding(8, 8, 8, 8)
 
-        while (cursor.moveToNext()) {
-            // Ambil data dari cursor
-            val kode = cursor.getString(0)
-            val nama = cursor.getString(1)
-            val hargaBeli = cursor.getInt(2)
-            val qty = cursor.getInt(3)
+                            row.addView(createTextView(kode))
+                            row.addView(createTextView(nama))
+                            row.addView(createTextView("Rp $hargaBeli"))
 
-            // --- BAGIAN TABEL ---
-            val row = TableRow(requireContext())
-            row.setPadding(8, 8, 8, 8)
+                            val tvQty = createTextView(qty.toString())
+                            tvQty.setTextColor(android.graphics.Color.RED)
+                            row.addView(tvQty)
 
-            row.addView(createTextView(kode))          // Kolom Kode
-            row.addView(createTextView(nama))          // Kolom Nama
-            row.addView(createTextView("Rp $hargaBeli")) // Kolom Harga Beli
+                            binding.tableBarang.addView(row)
 
-            val tvQty = createTextView(qty.toString())
-            tvQty.setTextColor(android.graphics.Color.RED)
-            row.addView(tvQty)                         // Kolom Qty Terjual
+                            // --- BAGIAN CHART ---
+                            entries.add(BarEntry(indexChart, qty.toFloat()))
+                            labels.add(nama)
+                            indexChart++
+                        }
 
-            binding.tableBarang.addView(row)
+                        if (entries.isNotEmpty()) {
+                            tampilkanChart(entries, labels)
+                        } else {
+                            binding.barChart.clear()
+                            Toast.makeText(context, "Tidak ada data pada rentang tanggal ini", Toast.LENGTH_SHORT).show()
+                        }
 
-            // --- BAGIAN CHART ---
-            entries.add(BarEntry(indexChart, qty.toFloat()))
-            labels.add(nama)
-            indexChart++
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            },
+            Response.ErrorListener {
+                if (isAdded) Toast.makeText(requireContext(), "Gagal memuat barang terlaris", Toast.LENGTH_SHORT).show()
+            }) {
+
+            // Tambah blok getParams di bagian bawah StringRequest
+            override fun getParams(): MutableMap<String, String> {
+                val params = HashMap<String, String>()
+                params["mode"] = "show_barang_terlaris"
+                params["tgl_mulai"] = tglMulai
+                params["tgl_akhir"] = tglAkhir
+                return params
+            }
         }
-
-        // 3. Panggil fungsi untuk menggambar Chart
-        if (entries.isNotEmpty()) {
-            tampilkanChart(entries, labels)
-        } else {
-            binding.barChart.clear() // Bersihkan chart jika data tidak ditemukan
-            Toast.makeText(context, "Tidak ada data pada rentang tanggal ini", Toast.LENGTH_SHORT).show()
-        }
-
-        cursor.close()
+        Volley.newRequestQueue(requireContext()).add(request)
     }
 
     private fun tampilkanChart(entries: ArrayList<BarEntry>, labels: ArrayList<String>) {
@@ -137,17 +147,16 @@ class FragmentBarangTerlarisOwner : Fragment() {
         val barData = BarData(dataSet)
         binding.barChart.data = barData
 
-        // Atur Axis X (Label Nama Barang)
         val xAxis = binding.barChart.xAxis
         xAxis.valueFormatter = com.github.mikephil.charting.formatter.IndexAxisValueFormatter(labels)
         xAxis.position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
         xAxis.setDrawGridLines(false)
         xAxis.granularity = 1f
-        xAxis.labelRotationAngle = -45f // Miringkan label agar tidak tabrakan
+        xAxis.labelRotationAngle = -45f
 
         binding.barChart.description.isEnabled = false
         binding.barChart.animateY(1000)
-        binding.barChart.invalidate() // Refresh chart
+        binding.barChart.invalidate()
     }
 
     private fun createTextView(text: String): TextView {
