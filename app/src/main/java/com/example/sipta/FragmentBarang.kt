@@ -33,14 +33,16 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
+import com.google.zxing.BarcodeFormat
+import com.journeyapps.barcodescanner.BarcodeEncoder
 
 class FragmentBarang : Fragment() {
     private var _binding: ActivityFragmentBarangBinding? = null
     private val binding get() = _binding!!
     private lateinit var thisParent: MainActivityAdmin
 
-    private val urlBarang = "http://192.168.1.127/sipta_api/crud_barang.php"
-    private val urlImageFolder = "http://192.168.1.127/sipta_api/images/"
+    private val urlBarang = "http://192.168.0.120/sipta_api/crud_barang.php"
+    private val urlImageFolder = "http://192.168.0.120/sipta_api/images/"
 
     private var daftarBarang = mutableListOf<HashMap<String, String>>()
     private var listNamaBarangAutoComplete = ArrayList<String>()
@@ -107,6 +109,17 @@ class FragmentBarang : Fragment() {
         })
 
         binding.fabAddBarang.setOnClickListener { showBarangDialog(null) }
+
+        // 🟢 TAMBAHKAN KODE BARU INI DI SINI:
+//        binding.lvBarang.setOnItemClickListener { _, _, position, _ ->
+//            // Ambil data hashmap barang berdasarkan baris yang diklik
+//            val itemTerpilih = daftarBarang[position]
+//            val namaBarang = itemTerpilih["nama"] ?: ""
+//            val kodeBarang = itemTerpilih["kode_barang"] ?: ""
+//
+//            // Panggil dialog popup QR Code
+//            tampilkanDialogDetailBarang(namaBarang, kodeBarang)
+//        }
 
         loadDataBarang("")
         return binding.root
@@ -213,8 +226,15 @@ class FragmentBarang : Fragment() {
                                         .show()
                                 }
 
+//                                view.setOnClickListener {
+//                                    Toast.makeText(requireContext(), "Tekan lama untuk mengedit data", Toast.LENGTH_SHORT).show()
+//                                }
                                 view.setOnClickListener {
-                                    Toast.makeText(requireContext(), "Tekan lama untuk mengedit data", Toast.LENGTH_SHORT).show()
+                                    val namaBarang = item["nama"] ?: ""
+                                    val kodeBarang = item["kode_barang"] ?: ""
+
+                                    // Langsung tembak fungsi popup QR Code dari dalam adapter
+                                    tampilkanDialogDetailBarang(namaBarang, kodeBarang)
                                 }
 
                                 view.setOnLongClickListener {
@@ -459,6 +479,40 @@ class FragmentBarang : Fragment() {
         }
 
         return resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+    }
+
+    private fun buatGambarQR(teksKode: String): Bitmap? {
+        return try {
+            val barcodeEncoder = BarcodeEncoder()
+            // Mengubah string kode barang menjadi Bitmap berukuran 500x500 pixel
+            barcodeEncoder.encodeBitmap(teksKode, BarcodeFormat.QR_CODE, 500, 500)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun tampilkanDialogDetailBarang(namaBarang: String, kodeBarang: String) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.layout_dialog_detail_barang, null)
+
+        val tvNama = dialogView.findViewById<TextView>(R.id.tvNamaBarangDetail)
+        val tvKode = dialogView.findViewById<TextView>(R.id.tvKodeBarangDetail)
+        val ivQr = dialogView.findViewById<ImageView>(R.id.ivQrCodeBarang)
+
+        tvNama.text = namaBarang
+        tvKode.text = "Kode: $kodeBarang"
+
+        // Panggil fungsi pembuat QR
+        val bitmapQr = buatGambarQR(kodeBarang)
+        if (bitmapQr != null) {
+            ivQr.setImageBitmap(bitmapQr) // Pasang gambar QR ke ImageView
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Informasi QR Produk")
+            .setView(dialogView)
+            .setPositiveButton("Selesai", null)
+            .show()
     }
 
     override fun onDestroyView() {

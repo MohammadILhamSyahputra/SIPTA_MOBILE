@@ -26,7 +26,7 @@ class FragmentDashboardAdmin : Fragment() {
     private val binding get() = _binding!!
 
     // URL Menembak Server Laragon (Sesuaikan dengan IP Laptop Server kelompokmu)
-    private val urlDashboard = "http://192.168.1.127/sipta_api/dashboard_admin.php"
+    private val urlDashboard = "http://192.168.0.120/sipta_api/dashboard_admin.php"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

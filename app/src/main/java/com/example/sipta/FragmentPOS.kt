@@ -22,6 +22,8 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import org.json.JSONArray
 import org.json.JSONObject
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 
 class FragmentPOS : Fragment() {
     private var _binding: ActivityFragmentPosBinding? = null
@@ -31,7 +33,7 @@ class FragmentPOS : Fragment() {
     private lateinit var adapterKeranjang: KeranjangAdapter
 
     // URL Web Service Laragon POS Transaksi
-    private val urlPos = "http://192.168.1.127/sipta_api/crud_transaksi_pos.php"
+    private val urlPos = "http://192.168.0.120/sipta_api/crud_transaksi_pos.php"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = ActivityFragmentPosBinding.inflate(inflater, container, false)
@@ -39,6 +41,9 @@ class FragmentPOS : Fragment() {
         setupCartList()
 
         binding.btnTambahBaris.setOnClickListener { showTambahBarangDialog() }
+        binding.btnScanQR.setOnClickListener {
+            bukaKameraScan()
+        }
         binding.btnCheckout.setOnClickListener { showCheckoutDialog() }
 
         return binding.root
@@ -202,6 +207,74 @@ class FragmentPOS : Fragment() {
             )
         }
         Volley.newRequestQueue(requireContext()).add(requestCheckout)
+    }
+
+    private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
+        if (result.contents == null) {
+            Toast.makeText(requireContext(), "Scan dibatalkan", Toast.LENGTH_SHORT).show()
+        } else {
+            val hasilTeksQR = result.contents // String kode barang hasil baca kamera
+            prosesInputBarangViaQR(hasilTeksQR)
+        }
+    }
+
+    // 2. Fungsi untuk membuka layar kamera Scanner
+    private fun bukaKameraScan() {
+        val options = ScanOptions().apply {
+            //setDesiredBarcodeFormats(ScanOptions.QR_CODE, ScanOptions.ONE_D_CODE) // Bisa QR & Barcode minimarket
+            setDesiredBarcodeFormats(listOf(ScanOptions.QR_CODE))
+            setPrompt("Arahkan kamera laptop/HP ke QR Code Barang")
+            setCameraId(0)
+            setBeepEnabled(true) // Bunyi 'tiit' kalau sukses scan
+            setOrientationLocked(true) // Kunci layar portrait
+        }
+        barcodeLauncher.launch(options)
+    }
+
+    // 3. Fungsi mencocokkan hasil scan ke server MySQL Laragon
+    private fun prosesInputBarangViaQR(kodeHasilScan: String) {
+        // 🟢 OPTIMASI: Munculkan pesan loading kecil agar kasir tahu sistem sedang bekerja
+        Toast.makeText(requireContext(), "Mencari barang...", Toast.LENGTH_SHORT).show()
+
+        val request = object : StringRequest(Request.Method.POST, urlPos,
+            Response.Listener { response ->
+                if (!isAdded) return@Listener
+                try {
+                    // Server sekarang hanya mengembalikan 1 objek barang yang dicari, bukan Array massal
+                    val jsonObject = JSONObject(response)
+
+                    if (jsonObject.has("status") && jsonObject.getString("status") == "gagal") {
+                        Toast.makeText(requireContext(), jsonObject.getString("pesan"), Toast.LENGTH_LONG).show()
+                        return@Listener
+                    }
+
+                    // Ambil data spesifik barang tersebut
+                    val cocok = BarangSimple(
+                        jsonObject.getInt("id"),
+                        jsonObject.getString("kode_barang"),
+                        jsonObject.getString("nama"),
+                        jsonObject.getInt("stok"),
+                        jsonObject.getInt("harga_jual")
+                    )
+
+                    // Langsung masukkan ke keranjang belanja secara instan!
+                    tambahAtauUpdateKeranjang(cocok)
+                    Toast.makeText(requireContext(), "${cocok.nama} ditambahkan", Toast.LENGTH_SHORT).show()
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Toast.makeText(requireContext(), "Format data tidak sesuai atau barang tidak ditemukan", Toast.LENGTH_SHORT).show()
+                }
+            }, Response.ErrorListener {
+                if (isAdded) Toast.makeText(requireContext(), "Gagal koneksi server", Toast.LENGTH_SHORT).show()
+            }) {
+            override fun getParams(): MutableMap<String, String> = hashMapOf(
+                // 🟢 KIRIM PARAMETER SPESIFIK KE PHP
+                "mode" to "scan_single_barang",
+                "kode_barang" to kodeHasilScan.trim()
+            )
+        }
+        Volley.newRequestQueue(requireContext()).add(request)
     }
 
     override fun onDestroyView() {

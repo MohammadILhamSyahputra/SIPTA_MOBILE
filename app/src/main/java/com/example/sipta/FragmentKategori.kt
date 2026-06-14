@@ -27,7 +27,7 @@ class FragmentKategori : Fragment(), View.OnClickListener {
     private var selectedId: String = ""
 
     // URL Server Laragon (Sesuaikan dengan IP Laptop Server-mu)
-    private val urlKategori = "http://192.168.1.127/sipta_api/crud_kategori.php"
+    private val urlKategori = "http://192.168.0.120/sipta_api/crud_kategori.php"
 
     // Menyimpan list data sementara untuk ListView
     private var daftarKategori = mutableListOf<HashMap<String, String>>()

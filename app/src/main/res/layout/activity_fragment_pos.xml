@@ -60,14 +60,42 @@
         android:divider="@android:color/darker_gray"
         android:dividerHeight="0.5dp" />
 
-    <Button
-        android:id="@+id/btnTambahBaris"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="+ Tambah Barang"
-        android:textColor="@color/sipta_bg_green"
-        app:icon="@android:drawable/ic_input_add" />
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:layout_marginTop="8dp">
+
+        <Button
+            android:id="@+id/btnTambahBaris"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="+ Ketik Barang"
+            android:textColor="@color/sipta_bg_green"
+            app:icon="@android:drawable/ic_input_add" />
+
+        <Button
+            android:id="@+id/btnScanQR"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text=" Scan QR"
+            android:textColor="#1E88E5"
+            app:icon="@android:drawable/ic_menu_camera" />
+    </LinearLayout>
+
+<!--    <Button-->
+<!--        android:id="@+id/btnTambahBaris"-->
+<!--        style="@style/Widget.MaterialComponents.Button.TextButton"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="+ Tambah Barang"-->
+<!--        android:textColor="@color/sipta_bg_green"-->
+<!--        app:icon="@android:drawable/ic_input_add" />-->
 
     <View
         android:layout_width="match_parent"
