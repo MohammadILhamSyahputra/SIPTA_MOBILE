@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment
 import com.example.sipta.databinding.ActivityFragmentPosBinding
 import java.text.SimpleDateFormat
 import java.util.*
-import android.widget.*
 import com.android.volley.Request
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
@@ -25,6 +24,16 @@ import org.json.JSONObject
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 
+import com.itextpdf.kernel.pdf.PdfDocument
+import com.itextpdf.kernel.pdf.PdfWriter
+import com.itextpdf.layout.Document
+import com.itextpdf.layout.element.Paragraph
+import com.itextpdf.layout.element.Table
+import com.itextpdf.layout.element.Cell
+import com.itextpdf.layout.property.TextAlignment
+import android.provider.MediaStore
+import android.os.Environment
+
 class FragmentPOS : Fragment() {
     private var _binding: ActivityFragmentPosBinding? = null
     private val binding get() = _binding!!
@@ -33,7 +42,7 @@ class FragmentPOS : Fragment() {
     private lateinit var adapterKeranjang: KeranjangAdapter
 
     // URL Web Service Laragon POS Transaksi
-    private val urlPos = "http://192.168.0.120/sipta_api/crud_transaksi_pos.php"
+    private val urlPos = "http://192.168.18.21/sipta_api/crud_transaksi_pos.php"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = ActivityFragmentPosBinding.inflate(inflater, container, false)
@@ -57,7 +66,6 @@ class FragmentPOS : Fragment() {
     private fun showTambahBarangDialog() {
         val listBarang = mutableListOf<BarangSimple>()
 
-        // Ambil data barang dinamis langsung dari server MySQL pusat
         val request = object : StringRequest(Request.Method.POST, urlPos,
             Response.Listener { response ->
                 if (!isAdded) return@Listener
@@ -74,7 +82,6 @@ class FragmentPOS : Fragment() {
                         ))
                     }
 
-                    // Tampilkan Dialog AutoComplete setelah data berhasil ditarik dari server
                     val autoView = AutoCompleteTextView(requireContext())
                     autoView.setPadding(40, 40, 40, 40)
                     autoView.hint = "Ketik Nama atau Kode Barang"
@@ -164,17 +171,18 @@ class FragmentPOS : Fragment() {
 
     private fun prosesTransaksiKeServer(total: Int, bayar: Int) {
         val kembalian = bayar - total
-
-        // Konversi list belanja menjadi format Array JSON String agar ramah dibaca PHP
         val jsonArrayItems = JSONArray()
         for (item in keranjangList) {
             val itemObj = JSONObject()
-            itemObj.put("barang_id", item.idBarang) // Menyesuaikan kolom barang_id database pusat
+            itemObj.put("barang_id", item.idBarang)
             itemObj.put("qty", item.qty)
             itemObj.put("harga_satuan", item.harga)
             itemObj.put("subtotal", item.subtotal)
             jsonArrayItems.put(itemObj)
         }
+
+        // Salinan list untuk cetak nota karena keranjang akan dikosongkan
+        val listNota = ArrayList(keranjangList)
 
         val requestCheckout = object : StringRequest(Request.Method.POST, urlPos,
             Response.Listener { response ->
@@ -184,12 +192,15 @@ class FragmentPOS : Fragment() {
                     if (jsonRes.getString("kode") == "000") {
                         AlertDialog.Builder(requireContext())
                             .setTitle("Transaksi Berhasil")
-                            .setMessage("Kembalian: Rp $kembalian")
-                            .setPositiveButton("OK") { _, _ ->
-                                keranjangList.clear()
-                                adapterKeranjang.notifyDataSetChanged()
-                                updateTotal()
+                            .setMessage("Kembalian: Rp $kembalian\nApakah ingin cetak nota?")
+                            .setPositiveButton("Cetak Nota") { _, _ ->
+                                cetakNotaPdf(listNota, total, bayar, kembalian)
+                                resetPOS()
                             }
+                            .setNegativeButton("Tidak") { _, _ ->
+                                resetPOS()
+                            }
+                            .setCancelable(false)
                             .show()
                     } else {
                         Toast.makeText(requireContext(), "Gagal: ${jsonRes.getString("pesan")}", Toast.LENGTH_LONG).show()
@@ -209,38 +220,104 @@ class FragmentPOS : Fragment() {
         Volley.newRequestQueue(requireContext()).add(requestCheckout)
     }
 
+    private fun resetPOS() {
+        keranjangList.clear()
+        adapterKeranjang.notifyDataSetChanged()
+        updateTotal()
+    }
+
+    private fun cetakNotaPdf(items: List<CartItem>, total: Int, bayar: Int, kembali: Int) {
+        try {
+            val resolver = requireContext().contentResolver
+            val fileName = "Nota_SIPTA_${System.currentTimeMillis()}.pdf"
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+
+            val uri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+            if (uri == null) return
+
+            val outputStream = resolver.openOutputStream(uri)
+            val writer = PdfWriter(outputStream)
+            val pdf = PdfDocument(writer)
+            val document = Document(pdf)
+
+            // Header Toko
+            document.add(Paragraph("TOKO SIPTA").setBold().setFontSize(20f).setTextAlignment(TextAlignment.CENTER))
+            document.add(Paragraph("Jl. Raya Sipit No. 123, Malang").setFontSize(10f).setTextAlignment(TextAlignment.CENTER))
+            document.add(Paragraph("------------------------------------------------------------------").setTextAlignment(TextAlignment.CENTER))
+
+            // Info Transaksi
+            val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            document.add(Paragraph("Tgl: ${sdf.format(Date())}").setFontSize(10f))
+            document.add(Paragraph("\n"))
+
+            // Tabel Barang
+            val table = Table(floatArrayOf(3f, 1f, 2f, 2f))
+            table.addHeaderCell(Cell().add(Paragraph("Item").setBold()))
+            table.addHeaderCell(Cell().add(Paragraph("Qty").setBold()))
+            table.addHeaderCell(Cell().add(Paragraph("Harga").setBold()))
+            table.addHeaderCell(Cell().add(Paragraph("Subtotal").setBold()))
+
+            for (item in items) {
+                table.addCell(item.nama)
+                table.addCell(item.qty.toString())
+                table.addCell("Rp ${item.harga}")
+                table.addCell("Rp ${item.subtotal}")
+            }
+            document.add(table)
+
+            document.add(Paragraph("\n"))
+            document.add(Paragraph("------------------------------------------------------------------").setTextAlignment(TextAlignment.CENTER))
+            
+            // Footer Total
+            document.add(Paragraph("Total Belanja: Rp $total").setBold().setTextAlignment(TextAlignment.RIGHT))
+            document.add(Paragraph("Bayar: Rp $bayar").setTextAlignment(TextAlignment.RIGHT))
+            document.add(Paragraph("Kembali: Rp $kembali").setBold().setTextAlignment(TextAlignment.RIGHT))
+
+            document.add(Paragraph("\n"))
+            document.add(Paragraph("Terima kasih atas kunjungan Anda!").setFontSize(10f).setTextAlignment(TextAlignment.CENTER))
+
+            document.close()
+            outputStream?.close()
+
+            Toast.makeText(requireContext(), "Nota berhasil disimpan di Download", Toast.LENGTH_LONG).show()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(requireContext(), "Gagal cetak nota: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
         if (result.contents == null) {
             Toast.makeText(requireContext(), "Scan dibatalkan", Toast.LENGTH_SHORT).show()
         } else {
-            val hasilTeksQR = result.contents // String kode barang hasil baca kamera
+            val hasilTeksQR = result.contents
             prosesInputBarangViaQR(hasilTeksQR)
         }
     }
 
-    // 2. Fungsi untuk membuka layar kamera Scanner
     private fun bukaKameraScan() {
         val options = ScanOptions().apply {
-            //setDesiredBarcodeFormats(ScanOptions.QR_CODE, ScanOptions.ONE_D_CODE) // Bisa QR & Barcode minimarket
             setDesiredBarcodeFormats(listOf(ScanOptions.QR_CODE))
-            setPrompt("Arahkan kamera laptop/HP ke QR Code Barang")
+            setPrompt("Arahkan kamera ke QR Code Barang")
             setCameraId(0)
-            setBeepEnabled(true) // Bunyi 'tiit' kalau sukses scan
-            setOrientationLocked(true) // Kunci layar portrait
+            setBeepEnabled(true)
+            setOrientationLocked(true)
         }
         barcodeLauncher.launch(options)
     }
 
-    // 3. Fungsi mencocokkan hasil scan ke server MySQL Laragon
     private fun prosesInputBarangViaQR(kodeHasilScan: String) {
-        // 🟢 OPTIMASI: Munculkan pesan loading kecil agar kasir tahu sistem sedang bekerja
         Toast.makeText(requireContext(), "Mencari barang...", Toast.LENGTH_SHORT).show()
 
         val request = object : StringRequest(Request.Method.POST, urlPos,
             Response.Listener { response ->
                 if (!isAdded) return@Listener
                 try {
-                    // Server sekarang hanya mengembalikan 1 objek barang yang dicari, bukan Array massal
                     val jsonObject = JSONObject(response)
 
                     if (jsonObject.has("status") && jsonObject.getString("status") == "gagal") {
@@ -248,7 +325,6 @@ class FragmentPOS : Fragment() {
                         return@Listener
                     }
 
-                    // Ambil data spesifik barang tersebut
                     val cocok = BarangSimple(
                         jsonObject.getInt("id"),
                         jsonObject.getString("kode_barang"),
@@ -257,19 +333,17 @@ class FragmentPOS : Fragment() {
                         jsonObject.getInt("harga_jual")
                     )
 
-                    // Langsung masukkan ke keranjang belanja secara instan!
                     tambahAtauUpdateKeranjang(cocok)
                     Toast.makeText(requireContext(), "${cocok.nama} ditambahkan", Toast.LENGTH_SHORT).show()
 
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    Toast.makeText(requireContext(), "Format data tidak sesuai atau barang tidak ditemukan", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Barang tidak ditemukan", Toast.LENGTH_SHORT).show()
                 }
             }, Response.ErrorListener {
                 if (isAdded) Toast.makeText(requireContext(), "Gagal koneksi server", Toast.LENGTH_SHORT).show()
             }) {
             override fun getParams(): MutableMap<String, String> = hashMapOf(
-                // 🟢 KIRIM PARAMETER SPESIFIK KE PHP
                 "mode" to "scan_single_barang",
                 "kode_barang" to kodeHasilScan.trim()
             )

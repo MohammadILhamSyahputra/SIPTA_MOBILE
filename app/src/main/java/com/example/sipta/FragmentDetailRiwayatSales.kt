@@ -25,7 +25,7 @@ class FragmentDetailRiwayatSales : Fragment() {
     private var salesId: Int = 0
 
     // URL API menuju Laragon (Sesuaikan IP Laptop Server kelompokmu)
-    private val urlDetail = "http://192.168.0.120/sipta_api/crud_detail_riwayat.php"
+    private val urlDetail = "http://192.168.18.21/sipta_api/crud_detail_riwayat.php"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
