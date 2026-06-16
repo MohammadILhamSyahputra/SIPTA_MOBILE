@@ -26,7 +26,7 @@ class FragmentRiwayat : Fragment() {
     private val binding get() = _binding!!
 
     // URL Web Service Laragon Riwayat Kasir
-    private val urlRiwayat = "http://192.168.18.21/sipta_api/crud_riwayat_pos.php"
+    private val urlRiwayat = "http://192.168.0.102/sipta_api/crud_riwayat_pos.php"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = ActivityFragmentRiwayatBinding.inflate(inflater, container, false)

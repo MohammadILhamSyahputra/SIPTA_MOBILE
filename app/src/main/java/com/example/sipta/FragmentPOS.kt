@@ -42,7 +42,7 @@ class FragmentPOS : Fragment() {
     private lateinit var adapterKeranjang: KeranjangAdapter
 
     // URL Web Service Laragon POS Transaksi
-    private val urlPos = "http://192.168.18.21/sipta_api/crud_transaksi_pos.php"
+    private val urlPos = "http://192.168.0.102/sipta_api/crud_transaksi_pos.php"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = ActivityFragmentPosBinding.inflate(inflater, container, false)
@@ -246,7 +246,7 @@ class FragmentPOS : Fragment() {
 
             // Header Toko
             document.add(Paragraph("TOKO SIPTA").setBold().setFontSize(20f).setTextAlignment(TextAlignment.CENTER))
-            document.add(Paragraph("Jl. Raya Sipit No. 123, Malang").setFontSize(10f).setTextAlignment(TextAlignment.CENTER))
+            document.add(Paragraph("Jl. KH Wachid Hasyim No.94, Bandar Lor, Kota Kediri").setFontSize(10f).setTextAlignment(TextAlignment.CENTER))
             document.add(Paragraph("------------------------------------------------------------------").setTextAlignment(TextAlignment.CENTER))
 
             // Info Transaksi
