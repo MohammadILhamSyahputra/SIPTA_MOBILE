@@ -23,7 +23,7 @@ class FragmentKelolaUser : Fragment(R.layout.activity_fragment_kelola_user) {
     private val binding get() = _binding!!
 
     // URL Web Service Laragon Kelola User
-    private val urlUser = "http://192.168.0.102/sipta_api/crud_kelola_user.php"
+    private val urlUser = "http://10.146.68.249/sipta_api/crud_kelola_user.php"
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

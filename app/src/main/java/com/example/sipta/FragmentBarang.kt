@@ -41,8 +41,8 @@ class FragmentBarang : Fragment() {
     private val binding get() = _binding!!
     private lateinit var thisParent: MainActivityAdmin
 
-    private val urlBarang = "http://192.168.0.102/sipta_api/crud_barang.php"
-    private val urlImageFolder = "http://192.168.0.102/sipta_api/images/"
+    private val urlBarang = "http://10.146.68.249/sipta_api/crud_barang.php"
+    private val urlImageFolder = "http://10.146.68.249/sipta_api/images/"
 
     private var daftarBarang = mutableListOf<HashMap<String, String>>()
     private var listNamaBarangAutoComplete = ArrayList<String>()

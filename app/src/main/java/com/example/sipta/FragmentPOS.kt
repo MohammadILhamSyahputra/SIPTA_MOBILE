@@ -42,7 +42,7 @@ class FragmentPOS : Fragment() {
     private lateinit var adapterKeranjang: KeranjangAdapter
 
     // URL Web Service Laragon POS Transaksi
-    private val urlPos = "http://192.168.0.102/sipta_api/crud_transaksi_pos.php"
+    private val urlPos = "http://10.146.68.249/sipta_api/crud_transaksi_pos.php"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = ActivityFragmentPosBinding.inflate(inflater, container, false)

@@ -27,7 +27,7 @@ class FragmentRiwayatSalesOwner : Fragment() {
     private val binding get() = _binding!!
 
     // URL Web Service Laragon (Sesuaikan IP Laptop Server kelompokmu)
-    private val urlRiwayat = "http://192.168.0.102sipta_api/crud_riwayat_sales.php"
+    private val urlRiwayat = "http://10.146.68.249/sipta_api/crud_riwayat_sales.php"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

@@ -25,7 +25,7 @@ class FragmentLapPenjualanOwner : Fragment() {
     private val binding get() = _binding!!
 
     // Tambah URL IP Server Manual (Menembak ke file laporan_penjualan.php)
-    private val urlLaporan = "http://192.168.0.102/sipta_api/laporan_penjualan.php"
+    private val urlLaporan = "http://10.146.68.249/sipta_api/laporan_penjualan.php"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

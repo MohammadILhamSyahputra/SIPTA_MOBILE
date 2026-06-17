@@ -25,7 +25,7 @@ class FragmentDashboardOwner : Fragment() {
     private val binding get() = _binding!!
 
     // Menggunakan file PHP web service yang sama (Hemat resources server Laragon)
-    private val urlDashboard = "http://192.168.0.102/sipta_api/dashboard_admin.php"
+    private val urlDashboard = "http://10.146.68.249/sipta_api/dashboard_admin.php"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
