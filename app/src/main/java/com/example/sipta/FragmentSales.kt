@@ -45,7 +45,7 @@ class FragmentSales : Fragment(), View.OnClickListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         vb = ActivityFragmentSalesBinding.inflate(inflater, container, false)
 
-        // 🟢 KODE BARU: Inisialisasi awal konfigurasi OpenStreetMap (OSM) [cite: 264, 265, 266, 267, 269, 271]
+        // Inisialisasi awal konfigurasi OpenStreetMap (OSM)
         Configuration.getInstance().load(requireContext(), PreferenceManager.getDefaultSharedPreferences(requireContext()))
         binding.mapSales.setTileSource(TileSourceFactory.MAPNIK)
         binding.mapSales.setMultiTouchControls(true)
@@ -54,15 +54,14 @@ class FragmentSales : Fragment(), View.OnClickListener {
         markerSales = Marker(binding.mapSales)
         markerSales.title = "Lokasi Alamat Sales"
 
-        // 2. 🟢 SOLUSI PASTI BERHASIL: Ganti icon Toko Pusat menggunakan Marker Bawaan Android
         markerTokoPusat = Marker(binding.mapSales)
-        markerTokoPusat.title = "Toko Pusat SIPTA"
+        markerTokoPusat.title = "Toko SIPTA"
         markerTokoPusat.position = GeoPoint(-7.825736185861851, 112.00635935822284)
 
-        // 🟢 AMBIL GAMBAR PIN LAIN: Menggunakan ikon penanda peta bawaan sistem Google Android
+        // Menggunakan ikon penanda peta bawaan sistem Google Android
         val gambarTokoPusat = androidx.core.content.ContextCompat.getDrawable(
             requireContext(),
-            android.R.drawable.ic_menu_myplaces // Ini adalah ikon penanda peta (Pin/Bintang) bawaan Android
+            android.R.drawable.ic_menu_myplaces
         )
 
         // Pasang gambar tersebut ke Toko Pusat
